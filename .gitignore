@@ -1,3 +1,35 @@
+# Files über 100 MB
+# Geobasiszwilling/geobasiszwilling_fhnw/geoserver_data/_data/ortho_FHNW_5cm/2020_FHNW_ortho_5cm.tif
+# Geobasiszwilling/geobasiszwilling_fhnw/import/building/swissBUILDINGS3D_3-0_1067-21.gml
+# Geobasiszwilling/geobasiszwilling_fhnw/import/building/swissBUILDINGS3D_3-0_1067-22.gml
+# Geobasiszwilling/geobasiszwilling_fhnw/import/mesh/CMU_Mesh_2020.obj
+# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2614_1264.las
+# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2614_1265.las
+# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2615_1264.las
+# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2615_1265.las
+# Geobasiszwilling/geobasiszwilling_fhnw/output/pointcloud/swisstopo_high/content.pnts
+# Geobasiszwilling/geobasiszwilling_fhnw/pgdata/base/5/149517
+
+Geobasiszwilling/geobasiszwilling_fhnw/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Python.gitignore template
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
