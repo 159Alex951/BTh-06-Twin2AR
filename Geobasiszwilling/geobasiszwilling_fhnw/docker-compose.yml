@@ -1,0 +1,157 @@
+version: '3.8'
+
+#################################################################
+# docker-compose.yml - Geobasiszwilling Umgebung
+# Hinweise:
+# - Auf Windows muessen die Volumes absolute Pfade (z. B. C:\_data\...) verwenden.
+# - Alternativ kannst du eine .env-Datei verwenden und Pfade ueber Variablen setzen.
+#################################################################
+
+services:
+  # ------------------------------
+  # 1) CTB-Job (Quantized Mesh)
+  # Generiert quantized-mesh Tiles aus einer VRT-Quelle (ctb-tile)
+  # ------------------------------
+  ctb_job:
+    image: tumgis/ctb-quantized-mesh:alpine
+    volumes:
+      # <HOST-PATH>:/data  - passe bei Bedarf an oder setze ueber .env
+      - ${DATA_ROOT}:/data
+    working_dir: /data
+    command:
+      - sh
+      - -c
+      - |
+        if [ ! -f /data/import/terrain/input.vrt ]; then
+          echo 'FEHLER: /data/import/terrain/input.vrt fehlt (bitte manuell erstellen)'; exit 1;
+        fi
+        echo 'Starte CTB (Quantized-Mesh) aus import/terrain/input.vrt'
+        ctb-tile -v -f Mesh -C -N --profile geodetic -e 0.2 -o /data/output/terrain_qm /data/import/terrain/input.vrt
+        echo 'Erzeuge layer.json'
+        ctb-tile -v -f Mesh -C -N -l --profile geodetic -o /data/output/terrain_qm /data/import/terrain/input.vrt
+        echo 'Fertig.'
+    restart: "no"
+
+  # ------------------------------
+  # 2) NGINX: Terrain + HTML
+  # Dient statische Bereitstellung der erzeugten Terrain-Tiles (output)
+  # sowie der HTML-App unter /site
+  # ------------------------------
+  webserver:
+    image: nginx:alpine
+    ports:
+      - "80:80"       # Alles über Port 80 erreichbar
+    volumes:
+      - ${DATA_ROOT}/output:/usr/share/nginx/html:ro
+      - ${DATA_ROOT}/www:/site:ro
+      - ${DATA_ROOT}/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+
+  # ------------------------------
+  # 3) GeoServer
+  # Geoserver mit Datenverzeichnis im Host (persistente Daten)
+  # ------------------------------
+  geoserver:
+    image: kartoza/geoserver:latest
+    ports:
+      - "8081:8080"   # Host:8081 -> Container:8080
+    volumes:
+      # Windows-Host-Pfad; auf Linux ggf. ./geoserver_data:/opt/geoserver/data_dir
+      - "${DATA_ROOT}/geoserver_data:/opt/geoserver/data_dir"
+    environment:
+      - GEOSERVER_ADMIN_USER=admin
+      - GEOSERVER_ADMIN_PASSWORD=geoserver
+      - GEOSERVER_CONTEXT_ROOT=geoserver
+      - JAVA_OPTS=-Xms1G -Xmx4G -Duser.timezone=UTC
+    restart: unless-stopped
+
+
+  # ------------------------------
+  # 4) gocesiumtiler
+  # Erzeugt 3D-Tiles / Tilesets aus Local-Data mittels gocesiumtiler
+  # Der ZIP-Release wird beim Build heruntergeladen (ARG GOCESIUMTILER_ZIP_URL)
+  # ------------------------------
+  gocesiumtiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.gocesiumtiler
+      args:
+        GOCESIUMTILER_ZIP_URL: "https://github.com/mfbonfigli/gocesiumtiler/releases/download/v2.0.1/gocesiumtiler-v2.0.1.zip"
+    volumes:
+      - ${DATA_ROOT}:/data
+    working_dir: /data
+    restart: "no"
+
+  # ------------------------------
+  # 5) GDAL
+  # Fuer VRT-Erstellung und andere Rasteroperationen
+  # ------------------------------
+  gdal:
+    image: ghcr.io/osgeo/gdal:ubuntu-full-3.8.5
+    volumes:
+      - ${DATA_ROOT}/import/terrain:/mnt
+    working_dir: /mnt
+    entrypoint: ["/bin/sh"]
+    tty: true
+    restart: "no"
+
+  # ------------------------------
+  # 6) 3DCityDB PostgreSQL/PostGIS
+  # 3D City Database mit Schweizer Koordinatensystem (SRID 2056)
+  # ------------------------------
+  citydb_pg:
+    image: 3dcitydb/3dcitydb-pg:5-alpine
+    environment:
+      - POSTGRES_PASSWORD=admin
+      - SRID=2056
+      - HEIGHT_EPSG=2056
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${DATA_ROOT}/pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ------------------------------
+  # 7) 3DCityDB Import/Export Tool
+  # Fuer CityGML Import und Export
+  # ------------------------------
+  citydb_impexp:
+    image: 3dcitydb/impexp:edge-alpine
+    depends_on:
+      - citydb_pg
+    volumes:
+      - ${DATA_ROOT}/import/building:/data
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+  # ------------------------------
+  # 8) pg2b3dm
+  # Python-Container fuer pg2b3dm (PostGIS zu 3D Tiles Konvertierung)
+  # ------------------------------
+  pg2b3dm:
+    image: python:3.11
+    depends_on:
+      - citydb_pg
+    working_dir: /work
+    volumes:
+      - ${DATA_ROOT}/output:/output
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+
+  # ------------------------------
+  # 9) Export API (Buildings -> OBJ)
+  # Minimal HTTP API that exports buildings inside a drawn polygon (WGS84)
+  # Uses GDAL/ogr2ogr against the CityDB/PostGIS.
+  # ------------------------------
+  export_api:
+    build:
+      context: ./export_api
+    volumes:
+      - ${DATA_ROOT}/output:/data/output:ro
+    restart: unless-stopped
+
+
+
+
+
+

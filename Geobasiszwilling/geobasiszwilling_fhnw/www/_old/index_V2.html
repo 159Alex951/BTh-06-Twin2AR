@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Cesium Terrain – Muttenz + swisstopo WMS</title>
+
+  <!-- CesiumJS 1.120 -->
+  <script>
+    window.CESIUM_BASE_URL = "https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/";
+  </script>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css">
+
+  <style>
+    html, body, #cesiumContainer { width:100%; height:100%; margin:0; padding:0; background:#000; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <script>
+    (async () => {
+      // --- Terrain (dein lokaler NGINX)
+      const terrainProvider = await Cesium.CesiumTerrainProvider.fromUrl(
+        "http://localhost:8083/terrain_qm",
+        { requestVertexNormals: true, requestWaterMask: false }
+      );
+
+      // --- swisstopo WMS (Orthofoto SWISSIMAGE)
+      // Weitere Layer-Beispiele:
+      //   "ch.swisstopo.swissimage"            // Orthofoto (JPEG)
+      //   "ch.swisstopo.pixelkarte-farbe"      // Landeskarte farbig
+      //   "ch.swisstopo.pixelkarte-grau"       // Landeskarte grau
+      const swisstopoLayerId = "ch.swisstopo.swissimage";
+
+      const wmsProvider = new Cesium.WebMapServiceImageryProvider({
+        url: "https://wms.geo.admin.ch/",
+        layers: swisstopoLayerId,
+        parameters: {
+          service: "WMS",
+          version: "1.3.0",
+          request: "GetMap",
+          styles: "",
+          format: "image/jpeg",       // für Orthofoto besser JPEG; für Karten ggf. "image/png"
+          transparent: false          // Orthofoto ohne Transparenz; bei Karten evtl. true
+        },
+        tilingScheme: new Cesium.WebMercatorTilingScheme(), // EPSG:3857
+        minimumLevel: 0,
+        maximumLevel: 19                // je nach Layer/Zoom anpassen
+      });
+
+      // --- Viewer
+      const viewer = new Cesium.Viewer("cesiumContainer", {
+        terrainProvider,
+        imageryProvider: wmsProvider,   // WMS als Basiskarte
+        baseLayerPicker: false,
+        geocoder: false,
+        timeline: false,
+        animation: false,
+        shadows: false
+      });
+
+      // Kamera nach Muttenz
+      const lon = 7.642048508425487;
+      const lat = 47.53461153297667;
+      const height = 1200; // m
+      viewer.scene.globe.depthTestAgainstTerrain = true;
+      viewer.scene.globe.enableLighting = true;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-35), roll: 0 }
+      });
+
+      // Optional: Layer-Switch per Taste (O ? Orthofoto, K ? Karte farbig)
+      window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "o") {
+          viewer.imageryLayers.removeAll();
+          viewer.imageryLayers.addImageryProvider(new Cesium.WebMapServiceImageryProvider({
+            url: "https://wms.geo.admin.ch/",
+            layers: "ch.swisstopo.swissimage",
+            parameters: { service:"WMS", version:"1.3.0", request:"GetMap", styles:"", format:"image/jpeg", transparent:false },
+            tilingScheme: new Cesium.WebMercatorTilingScheme()
+          }));
+        }
+        if (e.key.toLowerCase() === "k") {
+          viewer.imageryLayers.removeAll();
+          viewer.imageryLayers.addImageryProvider(new Cesium.WebMapServiceImageryProvider({
+            url: "https://wms.geo.admin.ch/",
+            layers: "ch.swisstopo.pixelkarte-farbe",
+            parameters: { service:"WMS", version:"1.3.0", request:"GetMap", styles:"", format:"image/png", transparent:false },
+            tilingScheme: new Cesium.WebMercatorTilingScheme()
+          }));
+        }
+      });
+      console.log("Layer switch: O = Orthofoto, K = Karte (farbig)");
+    })();
+  </script>
+</body>
+</html>

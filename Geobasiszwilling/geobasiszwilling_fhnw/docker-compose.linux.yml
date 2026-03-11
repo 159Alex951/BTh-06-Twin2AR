@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+
+  # ------------------------------
+  # NGINX Webserver
+  # ------------------------------
+  webserver:
+    image: nginx:alpine
+    container_name: geobasiszwilling-webserver
+    ports:
+      - "80:80"
+    volumes:
+      - ./output:/usr/share/nginx/html:ro
+      - ./www:/site:ro
+      - ./nginx/default.linux.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - geoserver
+      - export_api
+    restart: unless-stopped
+
+
+  # ------------------------------
+  # GeoServer
+  # ------------------------------
+  geoserver:
+    image: kartoza/geoserver:latest
+    container_name: geobasiszwilling-geoserver
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./geoserver_data:/opt/geoserver/data_dir
+    restart: unless-stopped
+
+
+  # ------------------------------
+  # Export API (OBJ Export)
+  # ------------------------------
+  export_api:
+    build:
+      context: ./export_api
+    container_name: geobasiszwilling-export-api
+    volumes:
+      - ./output:/data/output:ro
+    restart: unless-stopped
+
+
+  # ------------------------------
+  # PostGIS / 3DCityDB
+  # ------------------------------
+  citydb_pg:
+    image: 3dcitydb/3dcitydb-pg:5-alpine
+    container_name: geobasiszwilling-citydb-pg
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+
+  # ------------------------------
+  # 3DCityDB Import/Export Tools
+  # ------------------------------
+  citydb_impexp:
+    image: 3dcitydb/impexp:edge-alpine
+    container_name: geobasiszwilling-citydb-impexp
+    command: tail -f /dev/null
+    depends_on:
+      - citydb_pg
+
+
+  # ------------------------------
+  # GDAL (on-demand)
+  # ------------------------------
+  gdal:
+    image: ghcr.io/osgeo/gdal:ubuntu-full-3.8.5
+    container_name: geobasiszwilling-gdal
+    volumes:
+      - ./import:/mnt
+      - ./output:/mnt_out
+    command: /bin/sh
+
+
+  # ------------------------------
+  # Cesium Terrain Builder
+  # ------------------------------
+  ctb_job:
+    image: tumgis/ctb-quantized-mesh:alpine
+    container_name: geobasiszwilling-ctb-job
+    volumes:
+      - ./import/terrain:/data/input
+      - ./output/terrain_qm:/data/output
+    command: >
+      sh -c "if [ ! -f /data/output/layer.json ]; then
+             ctb-tile /data/input/input.vrt /data/output;
+             else echo 'Terrain already exists'; fi"
+
+
+  # ------------------------------
+  # pg2b3dm (Buildings → 3D Tiles)
+  # ------------------------------
+  pg2b3dm:
+    image: python:3.11
+    container_name: geobasiszwilling-pg2b3dm
+    command: tail -f /dev/null
+    volumes:
+      - ./output:/output

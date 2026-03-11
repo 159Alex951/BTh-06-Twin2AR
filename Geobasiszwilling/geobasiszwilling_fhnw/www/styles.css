@@ -1,0 +1,1297 @@
+.timeline-btn-wide {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.floating-btn-inactive {
+  opacity: 0.5;
+  cursor: pointer;
+  filter: grayscale(0.7);
+}
+.timeline-btn-tooltip {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  font-weight: 600;
+  text-align: center;
+  min-width: 140px;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.timeline-btn-tooltip:hover {
+  background: rgba(255,255,255,0.28);
+}
+.timeline-controls-row-flex {
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+.timeline-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-col-date {
+  min-width: 140px;
+}
+
+.timeline-col-view {
+  min-width: 100px;
+  align-items: flex-start;
+}
+/* Pop-up f�r Licht/Schatten-Button */
+#lightingHintPopup {
+  position: fixed;
+  z-index: 2000;
+  background: rgba(0,0,0,0.92);
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  font-size: 15px;
+  max-width: 240px;
+  pointer-events: auto;
+  transition: opacity 0.2s;
+  border: 2px solid #ffd700;
+}
+/*
+ * @file styles.css
+ * Haupt-Styles für die Anwendung: Layer-Panel, Info-Box, Koordinatenanzeige usw.
+ */
+
+html, body, #cesiumContainer {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  overflow: hidden;
+  font-family: "Bahnschrift", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+/* Layer Panel unten links */
+.layer-panel {
+  position: absolute;
+  bottom: 40px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.65); /* gleiches Schema wie Infofenster */
+  color: #f5f5f5;
+  padding: 12px 16px;
+  border-radius: 10px;             /* wie Infofenster */
+    font-family: "Bahnschrift", "Bahnschrift Regular", "Bahnschrift SemiBold", "Bahnschrift Light", Arial, Helvetica, sans-serif;
+  max-width: 180px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  text-align: center;
+}
+
+.layer-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.layer-panel hr {
+  border: none;
+    font-family: "Bahnschrift", "Bahnschrift Regular", "Bahnschrift SemiBold", "Bahnschrift Light", Arial, Helvetica, sans-serif;
+  margin: 12px 0;
+}
+
+.layer-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Global Checkbox Styling */
+input[type="radio"],
+input[type="checkbox"] {
+  cursor: pointer;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+input[type="radio"] {
+  border-radius: 50%;
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+input[type="radio"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Home Button */
+.home-btn {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Bahnschrift', 'Fira Mono', 'Consolas', 'Menlo', 'monospace', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.home-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Basiskarten Dropdown */
+.layer-select {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  outline: none;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+  text-align: center;
+  text-align-last: center;
+}
+
+.layer-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.layer-select option {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+/* 3D Tiles Dropdown */
+.tileset-dropdown {
+  margin-top: 0;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+#tilesetBtn {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+#tilesetBtn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.tileset-list {
+  display: none;
+  position: absolute;
+  left: calc(100% + 20px);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 160px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  text-align: left;
+}
+
+.tileset-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tileset-list label:last-child {
+  margin-bottom: 0;
+}
+
+/* Basiskarten Dropdown */
+.baselayer-dropdown {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+#baselayerBtn {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+#baselayerBtn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.baselayer-list {
+  display: none;
+  position: absolute;
+  left: calc(100% + 20px);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 160px;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  text-align: left;
+}
+
+.baselayer-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.baselayer-list label:last-child {
+  margin-bottom: 0;
+}
+
+/* BBox Export Button - same style as home-btn */
+.bbox-btn {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.bbox-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Koordinaten-Panel */
+.coord-panel {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* Floating Action Buttons (rechts unten) */
+.floating-buttons {
+  position: absolute;
+  bottom: 55px;
+  right: 15px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.floating-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+}
+
+.floating-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transform: scale(1.05);
+}
+
+/* Timeline Controls Panel */
+.timeline-controls {
+  position: absolute;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 18px 22px 18px 22px;
+  border-radius: 12px;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.timeline-controls .close-panel-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.timeline-controls .timeline-controls-row {
+  padding: 0;
+}
+
+.timeline-controls .timeline-controls-row:first-of-type {
+  padding-top: 0;
+}
+
+.close-panel-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+  z-index: 10;
+}
+
+.close-panel-btn:hover {
+  color: #fff;
+}
+
+.timeline-controls-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.timeline-controls-row:last-child {
+  margin-bottom: 0;
+}
+
+.current-datetime {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  font-weight: 600;
+  text-align: center;
+  min-width: 140px;
+  letter-spacing: 0.5px;
+}
+
+.timeline-scale-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.timeline-scale-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.timeline-scale-btn.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+/* Separates Klassifikations-Panel */
+.classification-panel {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  color: #f5f5f5;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  max-width: 220px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  text-align: center;
+}
+
+.classification-panel .close-panel-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.classification-panel .resolution-toggle-btn {
+  margin-top: 12px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.classification-panel .resolution-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+.classification-panel .pc-class-list-inline {
+  padding: 0;
+}
+
+.close-classification-panel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+}
+
+.close-classification-panel:hover {
+  color: #fff;
+}
+
+.classification-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pc-class-list-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-align: left;
+}
+
+.pc-class-list-inline label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+/* Export Panel */
+.export-panel {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  color: #f5f5f5;
+  padding: 16px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  min-width: 280px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  text-align: center;
+}
+
+.export-panel h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.export-panel .close-panel-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 0 8px;
+  font-size: 20px;
+}
+
+.export-height-control {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.export-height-control label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+}
+
+.height-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 8px 0;
+}
+
+.height-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+.height-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+.height-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+.height-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+.height-info {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+  text-align: center;
+}
+
+.export-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.export-control-btn {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.export-control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Punktwolken: Klassifizierungs-Dropdown (deprecated - now separate panel) */
+
+.pc-class-dropdown {
+  margin-top: 4px;
+  margin-left: 22px; /* Align mit Checkboxes */
+  position: relative;
+}
+
+#pcClassBtn {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  width: 170px;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Entfernte "age-color" Button-Styles (veraltet) */
+
+.pc-class-list {
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: 28px;
+  top: auto;
+
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  z-index: 1000;
+  width: 170px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.pc-class-list label {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.pc-class-list input {
+  cursor: pointer;
+}
+
+.profileButton {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #00c896;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 99999;
+}
+
+#profileCanvas {
+    backdrop-filter: blur(3px);
+}
+
+/* FHNW-Logo Styling */
+.fhnw-logo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2000;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 6px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.fhnw-logo img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+/* Gebaeude-Infofenster */
+.info-box {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 60vh;
+
+  /* Hintergrund an Layer-Panel angepasst */
+  background: rgba(0, 0, 0, 0.65);
+  color: #f5f5f5;
+
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 3000;
+  backdrop-filter: blur(4px);
+}
+
+.info-box.open {
+  display: flex;
+}
+
+.info-header {
+  background: rgba(0, 0, 0, 0.85);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.info-header {
+  cursor: move;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+#infoClose {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #ddd;
+  cursor: pointer;
+}
+
+#infoClose:hover {
+  color: #fff;
+}
+
+#infoContent {
+  padding: 10px 14px 12px;
+}
+
+/* Tabelle im Infofenster */
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.info-table th,
+.info-table td {
+  padding: 4px 0;
+  vertical-align: top;
+  text-align: left;
+}
+
+.info-table th {
+  width: 45%;
+  font-weight: 600;
+  color: #cccccc;
+  padding-right: 10px;
+}
+
+.info-table tr + tr td,
+.info-table tr + tr th {
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+.info-table td {
+  color: #e0e0e0;
+}
+
+.info-table a {
+  color: #4eaaff;
+  text-decoration: none;
+}
+
+.info-table a:hover {
+  text-decoration: underline;
+}
+/**
+ * @file styles/timeline.css
+ * Timeline controls and custom date/time picker styling
+ */
+
+/* Cesium Timeline Styling */
+.cesium-timeline-main {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  font-family: "Bahnschrift", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+.cesium-timeline-bar {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.cesium-timeline-ticLabel {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-family: "Bahnschrift", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 12px !important;
+}
+
+.cesium-timeline-ticMain {
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+
+.cesium-timeline-ticSub {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.cesium-timeline-icon16 {
+  filter: brightness(0) invert(1) !important;
+}
+
+.cesium-timeline-trackContainer {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+/* Hide the needle label that shows date/time on hover */
+.cesium-timeline-needleLabel {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Timeline Controls Panel */
+.timeline-controls {
+  position: absolute;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-controls-row label {
+  font-weight: 500;
+  min-width: 60px;
+  margin-bottom: 2px;
+}
+
+.current-datetime {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  font-weight: 600;
+  text-align: center;
+  min-width: 140px;
+  letter-spacing: 0.5px;
+}
+
+.timeline-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  outline: none;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.timeline-input-small {
+  padding: 4px 6px;
+  font-size: 12px;
+  min-width: 70px;
+  width: 70px;
+}
+
+.timeline-input:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.timeline-input:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.timeline-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.9);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Custom Time Input Styling - merged with timeline-input styling above */
+
+/* Custom Date Picker */
+.custom-date-picker {
+  position: relative;
+}
+
+.calendar-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.calendar-header span {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.cal-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.cal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-day:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.calendar-day.today {
+  border-color: rgba(100, 180, 255, 0.6);
+  background: rgba(100, 180, 255, 0.1);
+}
+
+.calendar-day.selected {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.calendar-day.other-month {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.calendar-day.other-month:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.timeline-btn,
+.timeline-scale-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Bahnschrift", system-ui, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.timeline-btn-small {
+  padding: 4px 8px;
+  font-size: 14px;
+  min-width: 32px;
+}
+
+.timeline-btn:hover,
+.timeline-scale-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.timeline-scale-btn.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+/* Custom Time Picker */
+.custom-time-picker {
+  position: relative;
+}
+
+.time-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  min-width: 140px;
+}
+
+.time-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.time-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  width: 32px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.time-number {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px;
+  min-width: 40px;
+}
+
+.time-separator {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.calendar-day-header {
+  font-weight: 600;
+  opacity: 0.7;
+  cursor: default !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.calendar-day-empty {
+  background: transparent !important;
+  border: none !important;
+  cursor: default !important;
+}
+
+.calendar-day-today {
+  border-color: rgba(100, 180, 255, 0.6) !important;
+  background: rgba(100, 180, 255, 0.1) !important;
+}
+
+.calendar-day-selected {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 600;
+}

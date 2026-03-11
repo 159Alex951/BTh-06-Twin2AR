@@ -10,7 +10,16 @@
 # Geobasiszwilling/geobasiszwilling_fhnw/output/pointcloud/swisstopo_high/content.pnts
 # Geobasiszwilling/geobasiszwilling_fhnw/pgdata/base/5/149517
 
-Geobasiszwilling/geobasiszwilling_fhnw/*
+# Geobasiszwilling/geobasiszwilling_fhnw/*
+
+Geobasiszwilling/geobasiszwilling_fhnw/geoserver_data/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/*
+Geobasiszwilling/geobasiszwilling_fhnw/pgdata/*
+Geobasiszwilling/geobasiszwilling_fhnw/nginx/*
+Geobasiszwilling/geobasiszwilling_fhnw/.obsidian/*
+Geobasiszwilling/geobasiszwilling_fhnw/.vscode/*
+
 
 
 

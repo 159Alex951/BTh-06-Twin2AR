@@ -1,0 +1,35 @@
+FROM debian:stable-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    unzip \
+    gdal-bin \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install directory for gocesiumtiler
+WORKDIR /opt/gocesiumtiler
+
+# URL of the release ZIP (Linux + Windows + share)
+ARG GOCESIUMTILER_ZIP_URL
+
+RUN echo "Download gocesiumtiler from: ${GOCESIUMTILER_ZIP_URL}" && \
+    curl -L "${GOCESIUMTILER_ZIP_URL}" -o gocesiumtiler.zip && \
+    unzip gocesiumtiler.zip -d /opt/gocesiumtiler_raw && \
+    rm gocesiumtiler.zip && \
+    mv /opt/gocesiumtiler_raw/gocesiumtiler-lin-x64 /opt/gocesiumtiler/gocesiumtiler && \
+    cp -r /opt/gocesiumtiler_raw/share /opt/gocesiumtiler/share && \
+    rm -rf /opt/gocesiumtiler_raw && \
+    chmod +x /opt/gocesiumtiler/gocesiumtiler
+
+ENV PATH="/opt/gocesiumtiler:${PATH}"
+
+WORKDIR /data
+
+
+# Entrypoint-Skript, das VRT erzeugt und dann gocesiumtiler startet
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["-help"]
