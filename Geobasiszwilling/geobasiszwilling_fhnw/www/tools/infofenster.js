@@ -16,6 +16,7 @@ function infofenster(viewer) {
   const infoContentEl = document.getElementById("infoContent");
   const infoCloseEl = document.getElementById("infoClose");
   const headerEl = infoBoxEl ? infoBoxEl.querySelector('.info-header') : null;
+  const floorCache = {};
 
   /**
   * Formatiert eine Zahl als Meter-String, ansonsten '-' bei ungültigen Werten.
@@ -147,6 +148,9 @@ function infofenster(viewer) {
         // JSON usually provides attributes under 'attributes' or 'properties'
         const attrs = (data && (data.attributes || data.properties)) || (data && data.feature && data.feature.attributes) || null;
         let year = null;
+        const floors = attrs.gastw ?? null;
+        floorCache[egid] = floors;
+        console.log("EGID", egid, "Anzahl Stockwerke (gastw) =", floors);
         if (attrs) {
           // Prefer 'GBAUJ' variants if present
           const keys = Object.keys(attrs);
@@ -162,6 +166,7 @@ function infofenster(viewer) {
             }
           }
         }
+
         // Fallback: any 4-digit year in JSON
         if (!year) {
           try {
@@ -183,63 +188,143 @@ function infofenster(viewer) {
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 
   handler.setInputAction(function (movement) {
+    console.log("Infofenster click handler triggered", movement);
+
     const picked = viewer.scene.pick(movement.position);
-    if (!Cesium.defined(picked) || typeof picked.getProperty !== "function") {
+    console.log("Picked raw:", picked);
+
+    if (!Cesium.defined(picked)) {
       hideInfoWindow();
       return;
     }
 
-    // Highlight: selektiertes Gebäude gelblich/transparent darstellen (BFS-Tileset)
-    const rawEgid = picked.getProperty("egid");
-    if (rawEgid !== null && rawEgid !== undefined && rawEgid !== "") {
-      window.selectedBuildingEgid = String(rawEgid);
-      if (typeof window.updateBFSStyle === "function") {
-        try { window.updateBFSStyle(); } catch (_) { }
-      }
-    } else {
-      // Kein EGID (z.B. anderes Tileset) → keine Auswahl erzwingen
-      if (window.selectedBuildingEgid !== undefined) {
-        delete window.selectedBuildingEgid;
+    const isTilesFeature = typeof picked.getProperty === "function";
+    const isProjectedEntity =
+      picked.id &&
+      picked.id.properties &&
+      (picked.id.properties.GWR_EGID !== undefined);
+
+    console.log("isTilesFeature", isTilesFeature, "isProjectedEntity", isProjectedEntity);
+
+    // 1) BFS 3D Tiles branch
+    if (isTilesFeature) {
+      const rawEgid = picked.getProperty("egid");
+      if (rawEgid !== null && rawEgid !== undefined && rawEgid !== "") {
+        window.selectedBuildingEgid = String(rawEgid);
         if (typeof window.updateBFSStyle === "function") {
           try { window.updateBFSStyle(); } catch (_) { }
         }
+      } else {
+        if (window.selectedBuildingEgid !== undefined) {
+          delete window.selectedBuildingEgid;
+          if (typeof window.updateBFSStyle === "function") {
+            try { window.updateBFSStyle(); } catch (_) { }
+          }
+        }
       }
+
+      const egid = safeText(picked.getProperty("egid"));
+      const objektart = safeText(picked.getProperty("objektart"));
+      const baujahr = safeText(picked.getProperty("baujahr"));
+      const strasse = safeText(picked.getProperty("strasse"));
+      const hausnummer = safeText(picked.getProperty("hausnummer"));
+      const plz = safeText(picked.getProperty("plz"));
+      const gemeinde = safeText(picked.getProperty("gemeinde"));
+      const dachMax = formatMeters(picked.getProperty("dach_max"));
+      const gelaende = formatMeters(picked.getProperty("gelaendepunkt"));
+      const anzahlWohnungen = safeText(picked.getProperty("anzahl_wohnungen"));
+
+      const bfsUrl = (egid !== "-")
+        ? 'https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/' + egid + '_0/extendedHtmlPopup?lang=de'
+        : null;
+      const linkHtml = bfsUrl ? '<a href="' + bfsUrl + '" target="_blank" rel="noopener">BFS-Eintrag</a>' : '-';
+
+      const adresse = (strasse !== "-" && hausnummer !== "-") ? strasse + " " + hausnummer : "-";
+      const ort = (plz !== "-" && gemeinde !== "-") ? plz + " " + gemeinde : (gemeinde !== "-" ? gemeinde : "-");
+
+      const tableHtml =
+        '<table class="info-table"><tbody>' +
+        '<tr><th>EGID</th><td>' + egid + '</td></tr>' +
+        '<tr><th>Objektart</th><td>' + objektart + '</td></tr>' +
+        '<tr><th>Baujahr</th><td>' + baujahr + '</td></tr>' +
+        '<tr><th>Adresse</th><td>' + adresse + '</td></tr>' +
+        '<tr><th>Ort</th><td>' + ort + '</td></tr>' +
+        '<tr><th>Wohnungen</th><td>' + anzahlWohnungen + '</td></tr>' +
+        '<tr><th>Hoehe</th><td>' + dachMax + '</td></tr>' +
+        '<tr><th>Gelaendepunkt</th><td>' + gelaende + '</td></tr>' +
+        '<tr><th>Link</th><td>' + linkHtml + '</td></tr>' +
+        '</tbody></table>';
+
+      const title = egid !== "-" ? "Gebaeude " + egid : "Gebaeudeinfo";
+      showInfoWindow(title, tableHtml, movement.position);
+
+      // also fetch year/floors in background
+      if (egid && egid !== "-") {
+        fetchBaujahrForEgid(egid);
+      }
+
+      return;
     }
 
-    // Properties von 3D Tiles (BFS-Daten direkt aus Tileset)
-    const egid = safeText(picked.getProperty("egid"));
-    const objektart = safeText(picked.getProperty("objektart"));
-    const baujahr = safeText(picked.getProperty("baujahr"));
-    const strasse = safeText(picked.getProperty("strasse"));
-    const hausnummer = safeText(picked.getProperty("hausnummer"));
-    const plz = safeText(picked.getProperty("plz"));
-    const gemeinde = safeText(picked.getProperty("gemeinde"));
-    const dachMax = formatMeters(picked.getProperty("dach_max"));
-    const gelaende = formatMeters(picked.getProperty("gelaendepunkt"));
-    const anzahlWohnungen = safeText(picked.getProperty("anzahl_wohnungen"));
+    // 2) Projected-entity branch
+    if (isProjectedEntity) {
+      const entity = picked.id;
+      const props = entity.properties;
 
-    const bfsUrl = (egid !== "-") ? 'https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/' + egid + '_0/extendedHtmlPopup?lang=de' : null;
-    const linkHtml = bfsUrl ? '<a href="' + bfsUrl + '" target="_blank" rel="noopener">BFS-Eintrag</a>' : '-';
+      const egidProp = props.GWR_EGID;
+      const egidRaw = egidProp && egidProp.getValue ? egidProp.getValue() : egidProp;
 
-    const adresse = (strasse !== "-" && hausnummer !== "-") ? strasse + " " + hausnummer : "-";
-    const ort = (plz !== "-" && gemeinde !== "-") ? plz + " " + gemeinde : (gemeinde !== "-" ? gemeinde : "-");
+      const egid = safeText(egidRaw);          // for display
+      const egidKey = egidRaw;                 // for cache lookup, same type as in fetchBaujahrForEgid
 
-    const tableHtml =
-      '<table class="info-table"><tbody>' +
-      '<tr><th>EGID</th><td>' + egid + '</td></tr>' +
-      '<tr><th>Objektart</th><td>' + objektart + '</td></tr>' +
-      '<tr><th>Baujahr</th><td>' + baujahr + '</td></tr>' +
-      '<tr><th>Adresse</th><td>' + adresse + '</td></tr>' +
-      '<tr><th>Ort</th><td>' + ort + '</td></tr>' +
-      '<tr><th>Wohnungen</th><td>' + anzahlWohnungen + '</td></tr>' +
-      '<tr><th>Hoehe</th><td>' + dachMax + '</td></tr>' +
-      '<tr><th>Gelaendepunkt</th><td>' + gelaende + '</td></tr>' +
-      '<tr><th>Link</th><td>' + linkHtml + '</td></tr>' +
-      '</tbody></table>';
+      const objektartProp = props.Art;
+      const objektart = safeText(objektartProp && objektartProp.getValue ? objektartProp.getValue() : objektartProp);
 
-    const title = egid !== "-" ? "Gebaeude " + egid : "Gebaeudeinfo";
-    showInfoWindow(title, tableHtml, movement.position);
+      const bfsNrProp = props.BFSNr;
+      const bfsNr = safeText(bfsNrProp && bfsNrProp.getValue ? bfsNrProp.getValue() : bfsNrProp);
+
+      const kantonProp = props.Kanton;
+      const kanton = safeText(kantonProp && kantonProp.getValue ? kantonProp.getValue() : kantonProp);
+
+      const qualitaetProp = props.Qualitaet;
+      const qualitaet = safeText(qualitaetProp && qualitaetProp.getValue ? qualitaetProp.getValue() : qualitaetProp);
+
+      const heightProp = props.height;
+      const height = safeText(heightProp && heightProp.getValue ? heightProp.getValue() : heightProp);
+
+      const bfsUrl = egid !== "-"
+        ? 'https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/' + egid + '_0/extendedHtmlPopup?lang=de'
+        : null;
+      const linkHtml = bfsUrl ? '<a href="' + bfsUrl + '" target="_blank" rel="noopener">BFS-Eintrag</a>' : '-';
+
+      const floorsText = safeText(floorCache[egidKey] ?? "-");
+
+      const tableHtml =
+        '<table class="info-table"><tbody>' +
+        '<tr><th>EGID</th><td>' + egid + '</td></tr>' +
+        '<tr><th>Objektart</th><td>' + objektart + '</td></tr>' +
+        '<tr><th>BFSNr</th><td>' + bfsNr + '</td></tr>' +
+        '<tr><th>Kanton</th><td>' + kanton + '</td></tr>' +
+        '<tr><th>Qualitaet</th><td>' + qualitaet + '</td></tr>' +
+        '<tr><th>Hoehe (dummy)</th><td>' + height + '</td></tr>' +
+        '<tr><th>Anzahl Stockwerke</th><td>' + floorsText + '</td></tr>' +
+        '<tr><th>Link</th><td>' + linkHtml + '</td></tr>' +
+        '</tbody></table>';
+
+      showInfoWindow('Projiziertes Gebaeude ' + egid, tableHtml, movement.position);
+
+      if (egidKey && egidKey !== "-") {
+        fetchBaujahrForEgid(egidKey);  // keeps filling floorCache as before
+      }
+
+      return;
+    }
+
+    // 3) Fallback: nothing relevant picked
+    hideInfoWindow();
+    return;
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
 
   // Rechtsklick schliesst das Fenster
   handler.setInputAction(function () { hideInfoWindow(); }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);

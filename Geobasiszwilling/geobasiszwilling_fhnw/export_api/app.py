@@ -918,6 +918,47 @@ def _export_buildings_obj_to_tmp(points_deg, tmpdir: str):
 
     return merged_obj, len(selected)
 
+#new prjektierte Gebäude extrudieren
+import requests
+
+@app.get("/export/projected_buildings.geojson")
+def projected_buildings_geojson():
+    lon_center = float(request.args.get("lon", 7.637))
+    lat_center = float(request.args.get("lat", 47.531))
+
+    dlat = 0.18
+    dlon = 0.27
+
+    west  = lon_center - dlon
+    east  = lon_center + dlon
+    south = lat_center - dlat
+    north = lat_center + dlat
+
+    params = {
+        "SERVICE": "WFS",
+        "VERSION": "2.0.0",
+        "REQUEST": "GetFeature",
+        "TYPENAMES": "ms:LCSFPROJ",
+        "OUTPUTFORMAT": "application/json; subtype=geojson",
+        "SRSNAME": "EPSG:4326",
+        "BBOX": f"{south},{west},{north},{east},urn:ogc:def:crs:EPSG::4326",
+        "COUNT": 5000,
+    }
+    try:
+        r = requests.get("https://geodienste.ch/db/av_0/deu", params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as exc:
+        return jsonify({"error": "WFS request failed", "details": str(exc)}), 502
+
+    for feat in data.get("features", []):
+        props = feat.setdefault("properties", {})
+        props.setdefault("height", 10.0)
+
+    return jsonify(data)
+
+
+#end new
 
 @app.get("/export/health")
 def health():
@@ -997,3 +1038,65 @@ def export_buildings_obj():
         return jsonify({"error": "Internal export error", "details": str(exc)}), 500
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
+#new
+@app.get("/export/scene.zip")
+def export_scene_zip():
+    poly_raw = request.args.get("poly", "")
+    if not poly_raw:
+        return jsonify({"error": "Missing required query param: poly"}), 400
+
+    try:
+        points = _parse_poly(poly_raw)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    tmpdir = tempfile.mkdtemp(prefix="export_scene_")
+    try:
+        # 1) existing buildings + terrain as today
+        merged_obj, tiles_count = _export_buildings_obj_to_tmp(points, tmpdir)
+        _append_terrain_to_obj(merged_obj, points)
+
+        # 2) compute shared anchor (centroid of bbox in WGS84)
+        lons = [p[0] for p in points]
+        lats = [p[1] for p in points]
+        anchor_lon = sum(lons) / len(lons)
+        anchor_lat = sum(lats) / len(lats)
+        anchor_alt = 0.0  # later: sample terrain
+
+        anchor_path = Path(tmpdir) / "anchor.json"
+        anchor_path.write_text(
+            json.dumps({
+                "longitude": anchor_lon,
+                "latitude": anchor_lat,
+                "altitude": anchor_alt,
+            }),
+            encoding="utf-8",
+        )
+
+        # 3) generate projected buildings OBJ in same ENU system
+        proj_obj = Path(tmpdir) / "projected_buildings.obj"
+        _export_projected_buildings_obj(points, proj_obj, anchor_lon, anchor_lat, anchor_alt)
+
+        # 4) zip everything
+        zip_path = Path(tmpdir) / "scene.zip"
+        import zipfile
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.write(merged_obj, "buildings.obj")
+            zf.write(proj_obj, "projected_buildings.obj")
+            zf.write(anchor_path, "anchor.json")
+
+        resp = send_file(
+            str(zip_path),
+            as_attachment=True,
+            download_name="scene.zip",
+            mimetype="application/zip",
+            max_age=0,
+        )
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    except Exception as exc:
+        return jsonify({"error": "Internal scene export error", "details": str(exc)}), 500
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+#end new
