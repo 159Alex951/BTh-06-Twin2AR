@@ -20,7 +20,10 @@ Geobasiszwilling/geobasiszwilling_fhnw/nginx/*
 Geobasiszwilling/geobasiszwilling_fhnw/.obsidian/*
 Geobasiszwilling/geobasiszwilling_fhnw/.vscode/*
 
-
+# Zu Grosse Daten für GitHub sind auf dem S Laufwerk gespeichert:
+# S:\HABG\E1364_IGEO_Projekte\E1364_G2023\6000_BTh\BTh_6
+Twin2AR/Analyse/buildings.geojson
+Twin2AR/Analyse/entrances.geojson
 
 
 
