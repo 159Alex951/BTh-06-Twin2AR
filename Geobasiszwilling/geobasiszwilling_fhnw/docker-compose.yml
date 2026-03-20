@@ -148,7 +148,10 @@ services:
       context: ./export_api
     volumes:
       - ${DATA_ROOT}/output:/data/output:ro
+      - ./import/proj:/import/proj:ro
     restart: unless-stopped
+
+  
 
 
 

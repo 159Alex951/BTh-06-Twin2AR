@@ -10,8 +10,8 @@ import struct
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_file
 #new
+from flask import Flask, jsonify, request, send_file
 from pyproj import Transformer
 _ecef_to_wgs84 = Transformer.from_crs("EPSG:4978", "EPSG:4326", always_xy=True)
 #end new
@@ -918,47 +918,27 @@ def _export_buildings_obj_to_tmp(points_deg, tmpdir: str):
 
     return merged_obj, len(selected)
 
-#new prjektierte Gebäude extrudieren
-import requests
+# new prjektierte Gebäude extrudieren temporäre Lösung über WFS, bis wir die projizierten Gebäude auch in den BFS Kacheln haben.
+
 
 @app.get("/export/projected_buildings.geojson")
 def projected_buildings_geojson():
-    lon_center = float(request.args.get("lon", 7.637))
-    lat_center = float(request.args.get("lat", 47.531))
+    # __file__ is .../geobasiszwilling_fhnw/export_api/app.py
+    base_dir = os.path.dirname(os.path.dirname(__file__))  # .../geobasiszwilling_fhnw
 
-    dlat = 0.18
-    dlon = 0.27
+    geojson_path = os.path.join(
+        base_dir,
+        "import", "proj",
+        "projected_buildings_enriched.geojson",
+    )
 
-    west  = lon_center - dlon
-    east  = lon_center + dlon
-    south = lat_center - dlat
-    north = lat_center + dlat
+    if not os.path.exists(geojson_path):
+        return jsonify({"error": f"GeoJSON not found at {geojson_path}"}), 500
 
-    params = {
-        "SERVICE": "WFS",
-        "VERSION": "2.0.0",
-        "REQUEST": "GetFeature",
-        "TYPENAMES": "ms:LCSFPROJ",
-        "OUTPUTFORMAT": "application/json; subtype=geojson",
-        "SRSNAME": "EPSG:4326",
-        "BBOX": f"{south},{west},{north},{east},urn:ogc:def:crs:EPSG::4326",
-        "COUNT": 5000,
-    }
-    try:
-        r = requests.get("https://geodienste.ch/db/av_0/deu", params=params, timeout=30)
-        r.raise_for_status()
-        data = r.json()
-    except Exception as exc:
-        return jsonify({"error": "WFS request failed", "details": str(exc)}), 502
-
-    for feat in data.get("features", []):
-        props = feat.setdefault("properties", {})
-        props.setdefault("height", 10.0)
-
-    return jsonify(data)
+    return send_file(geojson_path, mimetype="application/json")
 
 
-#end new
+# end new
 
 @app.get("/export/health")
 def health():

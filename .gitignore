@@ -13,7 +13,12 @@
 # Geobasiszwilling/geobasiszwilling_fhnw/*
 
 Geobasiszwilling/geobasiszwilling_fhnw/geoserver_data/*
-Geobasiszwilling/geobasiszwilling_fhnw/import/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/building/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/geoserver/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/mesh/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/point/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/*
+Geobasiszwilling/geobasiszwilling_fhnw/import/terrain/*
 Geobasiszwilling/geobasiszwilling_fhnw/output/*
 Geobasiszwilling/geobasiszwilling_fhnw/pgdata/*
 Geobasiszwilling/geobasiszwilling_fhnw/nginx/*

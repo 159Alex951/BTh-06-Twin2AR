@@ -273,9 +273,7 @@ function infofenster(viewer) {
 
       const egidProp = props.GWR_EGID;
       const egidRaw = egidProp && egidProp.getValue ? egidProp.getValue() : egidProp;
-
-      const egid = safeText(egidRaw);          // for display
-      const egidKey = egidRaw;                 // for cache lookup, same type as in fetchBaujahrForEgid
+      const egid = safeText(egidRaw);
 
       const objektartProp = props.Art;
       const objektart = safeText(objektartProp && objektartProp.getValue ? objektartProp.getValue() : objektartProp);
@@ -292,12 +290,15 @@ function infofenster(viewer) {
       const heightProp = props.height;
       const height = safeText(heightProp && heightProp.getValue ? heightProp.getValue() : heightProp);
 
+      // NEW: read gastw directly from enriched GeoJSON
+      const gastwProp = props.gastw;
+      const gastwRaw = gastwProp && gastwProp.getValue ? gastwProp.getValue() : gastwProp;
+      const floorsText = safeText(gastwRaw);
+
       const bfsUrl = egid !== "-"
         ? 'https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/' + egid + '_0/extendedHtmlPopup?lang=de'
         : null;
       const linkHtml = bfsUrl ? '<a href="' + bfsUrl + '" target="_blank" rel="noopener">BFS-Eintrag</a>' : '-';
-
-      const floorsText = safeText(floorCache[egidKey] ?? "-");
 
       const tableHtml =
         '<table class="info-table"><tbody>' +
@@ -313,12 +314,11 @@ function infofenster(viewer) {
 
       showInfoWindow('Projiziertes Gebaeude ' + egid, tableHtml, movement.position);
 
-      if (egidKey && egidKey !== "-") {
-        fetchBaujahrForEgid(egidKey);  // keeps filling floorCache as before
-      }
-
+      // no BFS fetch needed here anymore for floors
       return;
     }
+
+
 
     // 3) Fallback: nothing relevant picked
     hideInfoWindow();

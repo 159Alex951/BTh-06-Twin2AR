@@ -20,97 +20,7 @@
             }
           });
         }
-        // // Start new
-        // // Projected Buildings (WFS LCSFPROJ extruded)
-        // let projectedBuildingsDataSource = null;
-        // const chkProjectedBuildings = document.getElementById('chkProjectedBuildings');
-
-        // async function loadProjectedBuildings() {
-        //     if (projectedBuildingsDataSource) return projectedBuildingsDataSource;
-
-        //     const wfsUrl = "https://geodienste.ch/db/av_0/deu?" + new URLSearchParams({
-        //         SERVICE: "WFS",
-        //         VERSION: "2.0.0",
-        //         REQUEST: "GetFeature",
-        //         TYPENAMES: "ms:LCSFPROJ",
-        //         OUTPUTFORMAT: "application/json; subtype=geojson",
-        //         SRSNAME: "EPSG:4326",
-        //         BBOX: "47.418,7.472,47.644,7.802,urn:ogc:def:crs:EPSG::4326",
-        //         COUNT: "1000",
-        //     });
-
-        //     projectedBuildingsDataSource = new Cesium.GeoJsonDataSource("projected_buildings");
-        //     await projectedBuildingsDataSource.load(wfsUrl, {
-        //         fill: Cesium.Color.ORANGE.withAlpha(0.6),
-        //         stroke: Cesium.Color.DARKORANGE,
-        //         strokeWidth: 2,
-        //         clampToGround: false,
-        //     });
-
-        //     const EXTRUDE_HEIGHT = 10.0;
-        //     const entities = projectedBuildingsDataSource.entities.values;
-
-        //     console.log(`Loaded ${entities.length} projected building entities`);
-
-        //     // Build a cartographic point per building (centroid)
-        //     const cartographics = entities
-        //         .filter(e => e.polygon)
-        //         .map(e => {
-        //             const positions = e.polygon.hierarchy.getValue(Cesium.JulianDate.now()).positions;
-        //             let x = 0, y = 0, z = 0;
-        //             positions.forEach(p => { x += p.x; y += p.y; z += p.z; });
-        //             return Cesium.Cartographic.fromCartesian(
-        //                 new Cesium.Cartesian3(x / positions.length, y / positions.length, z / positions.length)
-        //             );
-        //         });
-
-        //     // Sample terrain — if it fails, just use height 0
-        //     try {
-        //         await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, cartographics);
-        //         console.log("Terrain sampling successful");
-        //     } catch(err) {
-        //         console.warn("Terrain sampling failed, using height 0:", err);
-        //     }
-
-        //     let i = 0;
-        //     entities.forEach(entity => {
-        //         if (entity.polygon) {
-        //             const terrainHeight = cartographics[i]?.height ?? 0;
-        //             entity.polygon.height = terrainHeight;
-        //             entity.polygon.extrudedHeight = terrainHeight + EXTRUDE_HEIGHT;
-        //             entity.polygon.fill = true;
-        //             entity.polygon.outline = true;
-        //             entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
-        //             i++;
-        //         }
-        //     });
-
-        //     viewer.dataSources.add(projectedBuildingsDataSource);
-        //     projectedBuildingsDataSource.show = chkProjectedBuildings.checked;
-        //     return projectedBuildingsDataSource;
-        // }
-          // End new
-
-        // if (chkProjectedBuildings) {
-        //     chkProjectedBuildings.addEventListener('change', async () => {
-        //         if (chkProjectedBuildings.checked) {
-        //             await loadProjectedBuildings();
-        //             if (projectedBuildingsDataSource) projectedBuildingsDataSource.show = true;
-        //         } else {
-        //             if (projectedBuildingsDataSource) projectedBuildingsDataSource.show = false;
-        //         }
-        //     });
-        // }
-        // // One-time cleanup: remove projected buildings if they exist
-        // if (window.viewer && window.projectedBuildingsDataSource) {
-        //   try {
-        //     window.viewer.dataSources.remove(window.projectedBuildingsDataSource, true);
-        //     window.projectedBuildingsDataSource = null;
-        //     console.log("Projected buildings removed from scene.");
-        //   } catch (err) {
-        //     console.warn("Could not remove projected buildings:", err);
-        //   }
-        // }
+        // start new
         let projectedBuildingsDataSource = null;
         const chkProjectedBuildings = document.getElementById('chkProjectedBuildings');
 
@@ -126,24 +36,41 @@
                 strokeWidth: 2,
                 clampToGround: false,
             });
-            console.log("Projected ds loaded",
-            projectedBuildingsDataSource.entities.values.length);
+            console.log(
+                "Projected ds loaded",
+                projectedBuildingsDataSource.entities.values.length
+            );
 
             projectedBuildingsDataSource.entities.values.forEach(entity => {
-                if (entity.polygon) {
-                    const h = entity.properties?.height?.getValue?.() ?? 10.0;
-                    entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
-                    entity.polygon.extrudedHeight = h;
-                    entity.polygon.extrudedHeightReference = Cesium.HeightReference.RELATIVE_TO_GROUND;
-                    entity.polygon.outline = true;
-                    entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
-                }
+                if (!entity.polygon) return;
+
+                const props = entity.properties || {};
+
+                // Prefer gastw if present (number of floors), fallback to previous height or 10 m
+                const gastwProp = props.gastw;
+                const gastw = gastwProp && gastwProp.getValue ? gastwProp.getValue() : gastwProp;
+
+                const floors = (typeof gastw === "number") ? gastw : parseFloat(gastw);
+                const defaultHeight = 100.0;
+
+                const h = Number.isFinite(floors)
+                    ? floors * 3.0            // 3 m per floor, tweak as needed
+                    : (props.height && props.height.getValue
+                        ? props.height.getValue()
+                        : defaultHeight);
+
+                entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
+                entity.polygon.extrudedHeight = h;
+                entity.polygon.extrudedHeightReference = Cesium.HeightReference.RELATIVE_TO_GROUND;
+                entity.polygon.outline = true;
+                entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
             });
 
             window.viewer.dataSources.add(projectedBuildingsDataSource);
             projectedBuildingsDataSource.show = chkProjectedBuildings.checked;
             return projectedBuildingsDataSource;
         }
+
 
         if (chkProjectedBuildings) {
             chkProjectedBuildings.addEventListener('change', async () => {
@@ -155,7 +82,7 @@
                 }
             });
         }
-
+      // End new
 
 
       // Floating-Button für farbige Gebäude-Legende
