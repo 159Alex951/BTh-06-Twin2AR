@@ -287,13 +287,21 @@ function infofenster(viewer) {
       const qualitaetProp = props.Qualitaet;
       const qualitaet = safeText(qualitaetProp && qualitaetProp.getValue ? qualitaetProp.getValue() : qualitaetProp);
 
-      const heightProp = props.height;
-      const height = safeText(heightProp && heightProp.getValue ? heightProp.getValue() : heightProp);
-
       // NEW: read gastw directly from enriched GeoJSON
       const gastwProp = props.gastw;
       const gastwRaw = gastwProp && gastwProp.getValue ? gastwProp.getValue() : gastwProp;
+      const floors = (typeof gastwRaw === "number") ? gastwRaw : parseFloat(gastwRaw);
       const floorsText = safeText(gastwRaw);
+
+      // height from gastw (floors * 3 m)
+      const hFloorsText = Number.isFinite(floors)
+          ? (floors * 3.0).toFixed(1) + " m"
+          : "-";
+
+      // secondary height from gvol/garea (written by app.js as h_vol)
+      const hVolProp = props.h_vol;
+      const hVolRaw = hVolProp && hVolProp.getValue ? hVolProp.getValue() : hVolProp;
+      const hVolText = Number.isFinite(hVolRaw) ? hVolRaw.toFixed(2) + " m" : "-";
 
       const bfsUrl = egid !== "-"
         ? 'https://api3.geo.admin.ch/rest/services/ech/MapServer/ch.bfs.gebaeude_wohnungs_register/' + egid + '_0/extendedHtmlPopup?lang=de'
@@ -307,7 +315,8 @@ function infofenster(viewer) {
         '<tr><th>BFSNr</th><td>' + bfsNr + '</td></tr>' +
         '<tr><th>Kanton</th><td>' + kanton + '</td></tr>' +
         '<tr><th>Qualitaet</th><td>' + qualitaet + '</td></tr>' +
-        '<tr><th>Hoehe (dummy)</th><td>' + height + '</td></tr>' +
+        '<tr><th>Hoehe (gastw)</th><td>' + hFloorsText + '</td></tr>' +
+        '<tr><th>Hoehe (gvol/garea)</th><td>' + hVolText + '</td></tr>' +
         '<tr><th>Anzahl Stockwerke</th><td>' + floorsText + '</td></tr>' +
         '<tr><th>Link</th><td>' + linkHtml + '</td></tr>' +
         '</tbody></table>';
@@ -317,6 +326,7 @@ function infofenster(viewer) {
       // no BFS fetch needed here anymore for floors
       return;
     }
+
 
 
 

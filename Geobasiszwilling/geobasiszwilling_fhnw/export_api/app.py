@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import tempfile
 import struct
+import math
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -380,7 +382,6 @@ def _normalize_obj_to_wgs84(obj_path: Path, origin_ecef):
 
     # Second pass: rewrite OBJ with WGS84 coords as local ENU offsets (meters) from anchor
     # This keeps vertex numbers small and metric — ideal for ARCore mesh rendering
-    import math
     sin_lon = math.sin(math.radians(anchor_lon))
     cos_lon = math.cos(math.radians(anchor_lon))
     sin_lat = math.sin(math.radians(anchor_lat))
@@ -991,7 +992,6 @@ def export_buildings_obj():
             # Keep export usable even if normalization fails.
             pass
 
-        import zipfile
         zip_path = Path(tmpdir) / "export.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.write(merged_obj, filename)
@@ -1059,7 +1059,6 @@ def export_scene_zip():
 
         # 4) zip everything
         zip_path = Path(tmpdir) / "scene.zip"
-        import zipfile
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.write(merged_obj, "buildings.obj")
             zf.write(proj_obj, "projected_buildings.obj")

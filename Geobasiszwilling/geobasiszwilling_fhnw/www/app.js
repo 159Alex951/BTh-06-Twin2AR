@@ -27,6 +27,7 @@
         async function loadProjectedBuildings() {
             if (projectedBuildingsDataSource) return projectedBuildingsDataSource;
 
+            // make sure this matches your Flask/static path
             const url = "/export/projected_buildings.geojson";
 
             projectedBuildingsDataSource = new Cesium.GeoJsonDataSource("projected_buildings");
@@ -36,6 +37,7 @@
                 strokeWidth: 2,
                 clampToGround: false,
             });
+
             console.log(
                 "Projected ds loaded",
                 projectedBuildingsDataSource.entities.values.length
@@ -46,31 +48,53 @@
 
                 const props = entity.properties || {};
 
-                // Prefer gastw if present (number of floors), fallback to previous height or 10 m
+                // ---------- primary height from gastw (floors) ----------
                 const gastwProp = props.gastw;
                 const gastw = gastwProp && gastwProp.getValue ? gastwProp.getValue() : gastwProp;
+                const floors = typeof gastw === "number" ? gastw : parseFloat(gastw);
 
-                const floors = (typeof gastw === "number") ? gastw : parseFloat(gastw);
                 const defaultHeight = 100.0;
 
-                const h = Number.isFinite(floors)
-                    ? floors * 3.0            // 3 m per floor, tweak as needed
+                const h_floors = Number.isFinite(floors)
+                    ? floors * 3.0
                     : (props.height && props.height.getValue
                         ? props.height.getValue()
                         : defaultHeight);
+
+                // ---------- secondary height from gvol / garea ----------
+                const gvolProp = props.gvol;
+                const gareaProp = props.garea;
+                const gvol = gvolProp && gvolProp.getValue ? gvolProp.getValue() : gvolProp;
+                const garea = gareaProp && gareaProp.getValue ? gareaProp.getValue() : gareaProp;
+
+                const v = typeof gvol === "number" ? gvol : parseFloat(gvol);
+                const a = typeof garea === "number" ? garea : parseFloat(garea);
+
+                let h_vol = NaN;
+                if (Number.isFinite(v) && Number.isFinite(a) && v > 0 && a > 0) {
+                    h_vol = v / a;  // meters
+                }
+
+                // final extrusion height: always finite
+                const h = Number.isFinite(h_floors) ? h_floors : defaultHeight;
 
                 entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
                 entity.polygon.extrudedHeight = h;
                 entity.polygon.extrudedHeightReference = Cesium.HeightReference.RELATIVE_TO_GROUND;
                 entity.polygon.outline = true;
                 entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
+
+                // expose h_vol for info window
+                if (entity.properties) {
+                    entity.properties.h_vol = h_vol;
+                }
             });
 
             window.viewer.dataSources.add(projectedBuildingsDataSource);
-            projectedBuildingsDataSource.show = chkProjectedBuildings.checked;
+            projectedBuildingsDataSource.show = chkProjectedBuildings?.checked ?? true;
+
             return projectedBuildingsDataSource;
         }
-
 
         if (chkProjectedBuildings) {
             chkProjectedBuildings.addEventListener('change', async () => {
@@ -82,7 +106,128 @@
                 }
             });
         }
-      // End new
+        // end new
+
+        
+
+
+        // start new
+        let projectedBuildingsDataSource2 = null;
+        const chkProjectedBuildings2 = document.getElementById('chkProjectedBuildings2');
+
+        async function loadProjectedBuildings2() {
+          if (projectedBuildingsDataSource2) return projectedBuildingsDataSource2;
+
+          const url = "/export/projected_buildings.geojson";
+
+          projectedBuildingsDataSource2 = new Cesium.GeoJsonDataSource("projected_buildings");
+          await projectedBuildingsDataSource2.load(url, {
+            fill: Cesium.Color.ORANGE.withAlpha(0.6),
+            stroke: Cesium.Color.DARKORANGE,
+            strokeWidth: 2,
+            clampToGround: false,
+          });
+
+          console.log(
+            "Projected ds loaded",
+            projectedBuildingsDataSource2.entities.values.length
+          );
+
+          const entities = projectedBuildingsDataSource2.entities.values;
+
+          entities.forEach(entity => {
+            if (!entity.polygon) return;
+
+            const props = entity.properties || {};
+
+            // ---------- primary height from gastw (floors) ----------
+            const gastwProp = props.gastw;
+            const gastw = gastwProp && gastwProp.getValue ? gastwProp.getValue() : gastwProp;
+            const floors = typeof gastw === "number" ? gastw : parseFloat(gastw);
+
+            const defaultHeight = 0.0;
+            const h_floors = Number.isFinite(floors) ? floors * 3.0 : defaultHeight;
+
+            // ---------- secondary height from gvol / garea ----------
+            const gvolProp = props.gvol;
+            const gareaProp = props.garea;
+            const gvol = gvolProp && gvolProp.getValue ? gvolProp.getValue() : gvolProp;
+            const garea = gareaProp && gareaProp.getValue ? gareaProp.getValue() : gareaProp;
+
+            const v = typeof gvol === "number" ? gvol : parseFloat(gvol);
+            const a = typeof garea === "number" ? garea : parseFloat(garea);
+
+            let h_vol = Number.isFinite(v) && Number.isFinite(a) && v > 0 && a > 0 ? v / a : NaN;
+
+            // store secondary height for info window
+            props.h_vol = h_vol;
+
+            // if no secondary height, keep simple one-block extrusion (orange)
+            if (!Number.isFinite(h_vol)) {
+              entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
+              entity.polygon.extrudedHeight = h_floors;
+              entity.polygon.extrudedHeightReference = Cesium.HeightReference.RELATIVE_TO_GROUND;
+              entity.polygon.material = Cesium.Color.ORANGE.withAlpha(0.6);
+              entity.polygon.outline = true;
+              entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
+              return;
+            }
+
+            // ---------- two-part stack ----------
+            const h1 = h_floors;
+            const h2 = h_vol;
+            const lower = Math.min(h1, h2);
+            const higher = Math.max(h1, h2);
+
+            const baseHeight = 0.0; // from ground
+
+            // original entity becomes lower block (orange)
+            entity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
+            entity.polygon.extrudedHeightReference = Cesium.HeightReference.RELATIVE_TO_GROUND;
+            entity.polygon.height = baseHeight;
+            entity.polygon.extrudedHeight = baseHeight + lower;
+            entity.polygon.material = Cesium.Color.ORANGE.withAlpha(0.6);
+            entity.polygon.outline = true;
+            entity.polygon.outlineColor = Cesium.Color.DARKORANGE;
+
+            // copy hierarchy for upper block
+            const hierarchy = entity.polygon.hierarchy.getValue
+              ? entity.polygon.hierarchy.getValue(Cesium.JulianDate.now())
+              : entity.polygon.hierarchy;
+
+            // upper block (purple), from lower to higher
+            projectedBuildingsDataSource2.entities.add({
+              polygon: {
+                hierarchy: hierarchy,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                extrudedHeightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                height: baseHeight + lower,
+                extrudedHeight: baseHeight + higher,
+                material: Cesium.Color.PURPLE.withAlpha(0.6),
+                outline: false
+              },
+              properties: props
+            });
+          });
+
+          window.viewer.dataSources.add(projectedBuildingsDataSource2);
+          projectedBuildingsDataSource2.show = chkProjectedBuildings2?.checked ?? true;
+
+          return projectedBuildingsDataSource2;
+        }
+
+        if (chkProjectedBuildings2) {
+          chkProjectedBuildings2.addEventListener('change', async () => {
+            if (chkProjectedBuildings2.checked) {
+              await loadProjectedBuildings2();
+              if (projectedBuildingsDataSource2) projectedBuildingsDataSource2.show = true;
+            } else {
+              if (projectedBuildingsDataSource2) projectedBuildingsDataSource2.show = false;
+            }
+          });
+        }
+        // end new
+
 
 
       // Floating-Button für farbige Gebäude-Legende
