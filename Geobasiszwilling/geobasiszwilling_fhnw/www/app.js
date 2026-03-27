@@ -47,6 +47,14 @@
                 if (!entity.polygon) return;
 
                 const props = entity.properties || {};
+                    // skip Sonderbau / underground / carports etc. (gkat = 1080)
+                const gkatProp = props.gkat;
+                const gkat = gkatProp && gkatProp.getValue ? gkatProp.getValue() : gkatProp;
+                if (String(gkat) === "1080") {
+                    // do not visualize this building at all
+                    return;
+                }
+
 
                 // ---------- primary height from gastw (floors) ----------
                 const gastwProp = props.gastw;
@@ -139,6 +147,14 @@
             if (!entity.polygon) return;
 
             const props = entity.properties || {};
+                // skip Sonderbau / carports etc. (gkat = 1080)
+            const gkatProp = props.gkat;
+            const gkat = gkatProp && gkatProp.getValue ? gkatProp.getValue() : gkatProp;
+            if (String(gkat) === "1080") {
+                // do not visualize this building at all
+                return;
+            }
+
 
             // ---------- primary height from gastw (floors) ----------
             const gastwProp = props.gastw;
