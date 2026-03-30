@@ -305,7 +305,7 @@ def add_height_stats():
         h3 = floors * 3.0 if floors is not None else None
         h25 = floors * 2.5 if floors is not None else None
         h2 = floors * 2.0 if floors is not None else None
-        hvol = (vol / area) if (vol is not None and area not in (None, 0)) else None
+        hvol = round(vol / area, 3) if (vol is not None and area not in (None, 0)) else None
 
         # percentage helpers
         def pct_diff(a, b):
@@ -355,6 +355,6 @@ def add_height_stats():
 if __name__ == "__main__":
     # Step A once, then you can comment it out while tweaking enrichment:
     # download_projected_geojson()
-    enrich_with_bfs_attrs()
-    check_gastw_garea_gvol()
+    # enrich_with_bfs_attrs()
+    # check_gastw_garea_gvol()
     add_height_stats()
