@@ -98,23 +98,27 @@ def _load_tileset_root_region():
     return west, south, east, north
 
 
-def _load_buildings_root_origin_ecef():
-    # Buildings content GLBs are positioned by tileset root.transform.
-    # We export OBJs from raw GLBs (without applying the tileset transform), so their
-    # vertex coordinates are effectively in a local frame centered at that origin.
+def _load_buildings_root_transform():
     if not BUILDINGS_BFS_TILESET.exists():
-        return 0.0, 0.0, 0.0
-
+        return None
     try:
         data = json.loads(BUILDINGS_BFS_TILESET.read_text(encoding="utf-8"))
         root = data.get("root") or {}
         tfm = root.get("transform")
         if isinstance(tfm, list) and len(tfm) >= 16:
-            # 3D Tiles transforms are column-major; translation is indices 12..14.
-            return float(tfm[12]), float(tfm[13]), float(tfm[14])
+            return tfm
     except Exception:
         pass
+    return None
 
+
+def _load_buildings_root_origin_ecef():
+    # Buildings content GLBs are positioned by tileset root.transform.
+    # We export OBJs from raw GLBs (without applying the tileset transform), so their
+    # vertex coordinates are effectively in a local frame centered at that origin.
+    tfm = _load_buildings_root_transform()
+    if tfm:
+        return float(tfm[12]), float(tfm[13]), float(tfm[14])
     return 0.0, 0.0, 0.0
 
 
@@ -257,7 +261,7 @@ def _translate_obj_to_origin_raw(obj_path: Path):
     tmp_path.replace(obj_path)
 
 
-def _normalize_obj_to_enu_for_dcc(obj_path: Path, origin_ecef):
+# def _normalize_obj_to_enu_for_dcc(obj_path: Path, origin_ecef):
     """Optional: rewrite OBJ into a local ENU frame at `origin_ecef`.
 
     This performs a rotation (ECEF -> ENU) in addition to translation, which some DCC
@@ -337,6 +341,106 @@ def _normalize_obj_to_enu_for_dcc(obj_path: Path, origin_ecef):
             dst.write(line)
 
     tmp_path.replace(obj_path)
+# new export
+def _normalize_obj_to_enu_for_dcc(obj_path: Path, target_origin_ecef, file_origin_ecef=None):
+    """
+    Rewrite OBJ vertex positions into a local ENU frame at `target_origin_ecef`.
+
+    - Input vertices are in ECEF deltas relative to `file_origin_ecef` (same frame as tileset root.transform).
+      If `file_origin_ecef` is not provided, it defaults to `target_origin_ecef`.
+    - Output vertices: X = East, Y = North, Z = Up around the target origin.
+    - Additionally recenters XY on the local bounding-box center and shifts Z
+      so the minimum becomes 0 (nice for DCC and AR).
+    """
+
+    if file_origin_ecef is None:
+        file_origin_ecef = target_origin_ecef
+
+    fox, foy, foz = map(float, file_origin_ecef)
+    tox, toy, toz = map(float, target_origin_ecef)
+
+    # The lat/lon for the local tangent plane is computed at the TARGET origin
+    lon0, lat0 = _ecef_to_lon_lat(tox, toy, toz)
+
+    minx = miny = minz = float("inf")
+    maxx = maxy = maxz = float("-inf")
+
+    def to_enu(x: float, y: float, z: float):
+        # convert ECEF delta (relative to file_origin) to ECEF delta (relative to target_origin)
+        dx = x + fox - tox
+        dy = y + foy - toy
+        dz = z + foz - toz
+        return _ecef_delta_to_enu(dx, dy, dz, lon0, lat0)
+
+    # First pass: find ENU bounds
+    with obj_path.open("r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            if not line.startswith("v "):
+                continue
+            parts = line.strip().split()
+            if len(parts) < 4:
+                continue
+            try:
+                x = float(parts[1])
+                y = float(parts[2])
+                z = float(parts[3])
+            except Exception:
+                continue
+            ex, ny, up = to_enu(x, y, z)
+            minx = min(minx, ex)
+            miny = min(miny, ny)
+            minz = min(minz, up)
+            maxx = max(maxx, ex)
+            maxy = max(maxy, ny)
+            maxz = max(maxz, up)
+
+    if minx == float("inf"):
+        return  # no vertices
+
+    cx = (minx + maxx) / 2.0
+    cy = (miny + maxy) / 2.0
+    gz = minz
+
+    tmp_path = obj_path.with_suffix(".enu.obj")
+
+    # Second pass: write transformed vertices / normals
+    with obj_path.open("r", encoding="utf-8", errors="ignore") as src, tmp_path.open(
+        "w", encoding="utf-8"
+    ) as dst:
+        for line in src:
+            if line.startswith("v "):
+                parts = line.strip().split()
+                if len(parts) >= 4:
+                    try:
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        z = float(parts[3])
+                        ex, ny, up = to_enu(x, y, z)
+                        ex -= cx
+                        ny -= cy
+                        up -= gz
+                        dst.write(f"v {ex:.6f} {ny:.6f} {up:.6f}\n")
+                        continue
+                    except Exception:
+                        pass
+            if line.startswith("vn "):
+                parts = line.strip().split()
+                if len(parts) >= 4:
+                    try:
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        z = float(parts[3])
+                        ex, ny, up = to_enu(x, y, z)
+                        # for normals we only rotate, no centering
+                        dst.write(f"vn {ex:.6f} {ny:.6f} {up:.6f}\n")
+                        continue
+                    except Exception:
+                        pass
+            dst.write(line)
+
+    tmp_path.replace(obj_path)
+
+# end new
 
 #new
 def _normalize_obj_to_wgs84(obj_path: Path, origin_ecef):
@@ -696,7 +800,7 @@ def _collect_terrain_tiles_for_bbox_impl(points_deg, include_ancestors: bool, ma
     }
 
 
-def _append_terrain_to_obj(obj_path: Path, points_deg, max_tiles=250):
+def _append_terrain_to_obj(obj_path: Path, points_deg, origin_ecef, max_tiles=250):
     # Append terrain as additional groups to an existing OBJ.
     # For OBJ merging we only need to offset vertex indices.
 
@@ -715,8 +819,6 @@ def _append_terrain_to_obj(obj_path: Path, points_deg, max_tiles=250):
     tiles = terrain_info["tiles"]
     if not tiles:
         return 0
-
-    origin_ecef = _load_buildings_root_origin_ecef()
 
     appended_tiles = 0
     with obj_path.open("a", encoding="utf-8") as out:
@@ -751,6 +853,7 @@ def _append_terrain_to_obj(obj_path: Path, points_deg, max_tiles=250):
 
     return appended_tiles
 
+# end new
 
 def _poly_bbox_radians(points_deg):
     lons = [p[0] for p in points_deg]
@@ -795,40 +898,20 @@ def _list_content_tiles():
     return tiles
 
 
-def _merge_objs(obj_paths, out_path: Path):
+def _merge_objs(obj_paths, out_path: Path, tfm=None):
     v_offset = 0
     vt_offset = 0
     vn_offset = 0
 
-    with out_path.open("w", encoding="utf-8") as out:
-        out.write("# Exported from buildings_bfs tiles\n")
+    m0, m1, m2 = 1.0, 0.0, 0.0
+    m4, m5, m6 = 0.0, 1.0, 0.0
+    m8, m9, m10 = 0.0, 0.0, 1.0
 
-        for obj_path in obj_paths:
-            out.write(f"\ng {obj_path.stem}\n")
-            with obj_path.open("r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if line.startswith("mtllib") or line.startswith("usemtl"):
-                        continue
-                    if line.startswith("v "):
-                        out.write(line)
-                        v_offset += 1
-                        continue
-                    if line.startswith("vt "):
-                        out.write(line)
-                        vt_offset += 1
-                        continue
-                    if line.startswith("vn "):
-                        out.write(line)
-                        vn_offset += 1
-                        continue
+    if tfm and len(tfm) >= 16:
+        m0, m1, m2 = float(tfm[0]), float(tfm[1]), float(tfm[2])
+        m4, m5, m6 = float(tfm[4]), float(tfm[5]), float(tfm[6])
+        m8, m9, m10 = float(tfm[8]), float(tfm[9]), float(tfm[10])
 
-            # Second pass for faces (need offsets from *previous* totals, so track separately)
-            # We'll re-read and rewrite faces with index shifts.
-            # To do that, we need the counts BEFORE writing this file's vertices.
-            # So we compute counts by scanning once up front.
-
-        # The above increments offsets as we go, but we need proper index shifts per file.
-    
     # Re-implement with proper per-file offsets
     v_total = 0
     vt_total = 0
@@ -853,7 +936,34 @@ def _merge_objs(obj_paths, out_path: Path):
                 for line in f:
                     if line.startswith("mtllib") or line.startswith("usemtl"):
                         continue
-                    if line.startswith("v ") or line.startswith("vt ") or line.startswith("vn "):
+                    if line.startswith("v "):
+                        parts = line.strip().split()
+                        if len(parts) >= 4:
+                            x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+                            # In glTF, coordinates are Y-up. However, 3D tiles transforms
+                            # expect the local coordinate system to be Z-up. 
+                            # Conversion from Y-up to Z-up: X_z = X_y, Y_z = -Z_y, Z_z = Y_y.
+                            lx, ly, lz = x, -z, y
+                            dx = m0*lx + m4*ly + m8*lz
+                            dy = m1*lx + m5*ly + m9*lz
+                            dz = m2*lx + m6*ly + m10*lz
+                            out.write(f"v {dx:.6f} {dy:.6f} {dz:.6f}\n")
+                        else:
+                            out.write(line)
+                        continue
+                    if line.startswith("vn "):
+                        parts = line.strip().split()
+                        if len(parts) >= 4:
+                            x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+                            lx, ly, lz = x, -z, y
+                            nx = m0*lx + m4*ly + m8*lz
+                            ny = m1*lx + m5*ly + m9*lz
+                            nz = m2*lx + m6*ly + m10*lz
+                            out.write(f"vn {nx:.6f} {ny:.6f} {nz:.6f}\n")
+                        else:
+                            out.write(line)
+                        continue
+                    if line.startswith("vt "):
                         out.write(line)
                         continue
                     if line.startswith("f "):
@@ -913,7 +1023,8 @@ def _export_buildings_obj_to_tmp(points_deg, tmpdir: str):
         obj_paths.append(out_obj_tile)
 
     merged_obj = Path(tmpdir) / "buildings.obj"
-    _merge_objs(obj_paths, merged_obj)
+    tfm = _load_buildings_root_transform()
+    _merge_objs(obj_paths, merged_obj, tfm)
     if merged_obj.stat().st_size < 50:
         raise FileNotFoundError("No geometry exported")
 
@@ -965,9 +1076,16 @@ def export_buildings_obj():
     try:
         merged_obj, tiles_count = _export_buildings_obj_to_tmp(points, tmpdir)
 
+        origin_ecef = _load_buildings_root_origin_ecef()
+
         # Append terrain into same OBJ
         try:
-            terrain_tiles_appended = _append_terrain_to_obj(merged_obj, points)
+            terrain_tiles_appended = _append_terrain_to_obj(
+                merged_obj,
+                points,
+                origin_ecef,   # pick the same origin you use for buildings here
+            )
+
         except FileNotFoundError:
             terrain_tiles_appended = 0
         except Exception as exc:
@@ -1034,7 +1152,8 @@ def export_scene_zip():
     try:
         # 1) existing buildings + terrain as today
         merged_obj, tiles_count = _export_buildings_obj_to_tmp(points, tmpdir)
-        _append_terrain_to_obj(merged_obj, points)
+        origin_ecef = _load_buildings_root_origin_ecef()
+        _append_terrain_to_obj(merged_obj, points, origin_ecef)
 
         # 2) compute shared anchor (centroid of bbox in WGS84)
         lons = [p[0] for p in points]
@@ -1042,6 +1161,17 @@ def export_scene_zip():
         anchor_lon = sum(lons) / len(lons)
         anchor_lat = sum(lats) / len(lats)
         anchor_alt = 0.0  # later: sample terrain
+
+        anchor_x, anchor_y, anchor_z = _wgs84_to_ecef(
+            math.radians(anchor_lon),
+            math.radians(anchor_lat),
+            anchor_alt,
+        )
+        origin_ecef = (anchor_x, anchor_y, anchor_z)
+        building_origin_ecef = _load_buildings_root_origin_ecef()
+
+        _normalize_obj_to_enu_for_dcc(merged_obj, origin_ecef, building_origin_ecef)
+
 
         anchor_path = Path(tmpdir) / "anchor.json"
         anchor_path.write_text(
