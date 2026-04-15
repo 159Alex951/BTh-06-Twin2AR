@@ -151,6 +151,21 @@ services:
       - ./import/proj:/import/proj:ro
     restart: unless-stopped
 
+  # ------------------------------
+  # 10) Twin2AR Frontend
+  # ------------------------------
+
+
+  ar_frontend:
+    build:
+      context: ../../Twin2AR/Frontend
+    container_name: ar-frontend
+    restart: unless-stopped
+    ports:
+      - "8050:8050"   # host:container, adjust if needed
+    networks:
+      - default       # or your custom network
+
   
 
 
