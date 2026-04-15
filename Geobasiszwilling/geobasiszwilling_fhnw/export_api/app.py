@@ -1030,7 +1030,7 @@ def _export_buildings_obj_to_tmp(points_deg, tmpdir: str):
 
     return merged_obj, len(selected)
 
-# new prjektierte Gebäude extrudieren temporäre Lösung über WFS, bis wir die projizierten Gebäude auch in den BFS Kacheln haben.
+# new projektierte Gebäude extrudieren temporäre Lösung über WFS, bis wir die projizierten Gebäude auch in den BFS Kacheln haben.
 
 
 @app.get("/export/projected_buildings.geojson")
