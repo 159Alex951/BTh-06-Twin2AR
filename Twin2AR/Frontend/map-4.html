@@ -160,7 +160,7 @@
 
         #expanded-info-mobile {
             position: absolute; bottom: 120px; padding: 8px; border-radius: 8px;
-            width: max-content; max-width: 96vw; /* max-height: 65vh; Removed to fit new row */
+            width: max-content; max-width: 96vw; max-height: 65vh;
         }
 
         /* --- Shared Inner Details Content --- */
@@ -279,7 +279,7 @@
 </div>
 
 <!-- Full Image Modal (Mobile) -->
-<div id="image-modal">
+<div id="image-modal" onclick="closeModal()">
     <div id="modal-filename" style="position: absolute; top: 20px; color: white; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; z-index: 3002; display: none;"></div>
     <img id="expanded-image" alt="Expanded View">
     <div id="expanded-info-mobile" class="expanded-info" onclick="event.stopPropagation()"></div>
@@ -362,7 +362,54 @@
         `;
     }
 
-    
+    function buildDetailHtml(data) {
+        const rootSection = makeSection("Root Pose", [
+            { label: "Lat", value: fmt(data.latitude, 6) }, { label: "Lon", value: fmt(data.longitude, 6) },
+            { label: "Alt", value: fmt(data.altitude, 2) + "m" }, { label: "Heading", value: fmt(data.heading, 1) + "°" },
+            { label: "Pitch", value: fmt(data.pitch, 1) + "°" }, { label: "Roll", value: fmt(data.roll, 1) + "°" }
+        ], "#e74c3c");
+
+        const rawGPS = data.rawGPS || {};
+        const rawGpsSection = makeSection("Raw GPS", [
+            { label: "Lat", value: fmt(rawGPS.latitude, 6) }, { label: "Lon", value: fmt(rawGPS.longitude, 6) },
+            { label: "Alt", value: rawGPS.altitude !== undefined ? fmt(rawGPS.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: rawGPS.horizontalAccuracy !== undefined ? fmt(rawGPS.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: rawGPS.verticalAccuracy !== undefined ? fmt(rawGPS.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: rawGPS.heading !== undefined ? fmt(rawGPS.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: rawGPS.headingAccuracy !== undefined ? fmt(rawGPS.headingAccuracy, 1) + "°" : undefined }
+        ], "#3498db");
+
+        const vps = data.vps || {};
+        const vpsSection = makeSection("VPS", [
+            { label: "Lat", value: fmt(vps.latitude, 6) }, { label: "Lon", value: fmt(vps.longitude, 6) },
+            { label: "Alt", value: vps.altitude !== undefined ? fmt(vps.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: vps.horizontalAccuracy !== undefined ? fmt(vps.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: vps.verticalAccuracy !== undefined ? fmt(vps.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: vps.heading !== undefined ? fmt(vps.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: vps.headingAccuracy !== undefined ? fmt(vps.headingAccuracy, 1) + "°" : undefined },
+            { label: "Pitch", value: vps.pitch !== undefined ? fmt(vps.pitch, 1) + "°" : undefined },
+            { label: "Roll", value: vps.roll !== undefined ? fmt(vps.roll, 1) + "°" : undefined }
+        ], "#2ecc71");
+
+        const osmOrigin = data.osmOrigin || {};
+        const osmSection = makeSection("OSM Origin", [
+            { label: "Lat", value: fmt(osmOrigin.latitude, 6) }, { label: "Lon", value: fmt(osmOrigin.longitude, 6) },
+            { label: "Alt", value: osmOrigin.altitude !== undefined ? fmt(osmOrigin.altitude, 2) + "m" : undefined }
+        ]);
+
+        const unityRig = data.unityRig || {};
+        const unityRigSection = makeSection("Unity Rig", [
+            { label: "Pos X", value: fmt(unityRig.posX, 3) }, { label: "Pos Y", value: fmt(unityRig.posY, 3) },
+            { label: "Pos Z", value: fmt(unityRig.posZ, 3) }, { label: "Rot X", value: fmt(unityRig.rotX, 4) },
+            { label: "Rot Y", value: fmt(unityRig.rotY, 4) }, { label: "Rot Z", value: fmt(unityRig.rotZ, 4) },
+            { label: "Rot W", value: fmt(unityRig.rotW, 4) }
+        ]);
+
+        return `
+            <div class="details-row top-row"><div class="details-wrapper">${rootSection} ${rawGpsSection} ${vpsSection}</div></div>
+            <div class="details-row"><div class="details-wrapper">${osmSection} ${unityRigSection}</div></div>
+        `;
+    }
 
     async function fetchLocations() {
         try {
@@ -469,6 +516,38 @@
         markerCluster.addLayer(marker);
     }
 
+    async function loadLocation(filename) {
+        try {
+            const res = await fetch('/data/' + filename, { cache: 'no-store' });
+            const data = await res.json();
+
+            markerCluster.clearLayers();
+
+            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300);
+            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200);
+            if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100);
+
+            const bounds = markerCluster.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { maxZoom: 21, padding: [30, 30] });
+            }
+
+            const imgSrc = '/data/' + filename.replace('.json', '.jpg');
+            thumbnail.src = imgSrc;
+            thumbnail.style.display = 'block';
+            thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
+
+            expandedImage.src = imgSrc;
+
+            // Show filename on mobile
+            if (window.innerWidth < 768) {
+                const fnameEl = document.getElementById('modal-filename');
+                fnameEl.innerText = filename;
+                fnameEl.style.display = 'block';
+            } else {
+                document.getElementById('modal-filename').style.display = 'none';
+            }
+            
     function buildDetailHtml(data) {
       const rootSection = makeSection('Root Pose', [
         { label: 'Lat', value: fmt(data.latitude, 6) },
@@ -542,44 +621,6 @@
       `;
     }
 
-    async function loadLocation(filename) {
-        try {
-            const res = await fetch('/data/' + filename, { cache: 'no-store' });
-            const data = await res.json();
-
-            markerCluster.clearLayers();
-
-            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300);
-            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200);
-            if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100);
-
-            const bounds = markerCluster.getBounds();
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, { maxZoom: 21, padding: [30, 30] });
-            }
-
-            const imgSrc = '/data/' + filename.replace('.json', '.jpg');
-            thumbnail.src = imgSrc;
-            thumbnail.style.display = 'block';
-            thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
-
-            expandedImage.src = imgSrc;
-
-            // Show filename on mobile
-            const fnameEl = document.getElementById('modal-filename');
-            if (fnameEl) {
-                if (window.innerWidth < 768) {
-                    fnameEl.innerText = filename;
-                    fnameEl.style.display = 'block';
-                } else {
-                    fnameEl.style.display = 'none';
-                }
-            }
-
-            const detailHtml = buildDetailHtml(data);
-        document.getElementById('expanded-info-mobile').innerHTML = detailHtml;
-        document.getElementById('expanded-info-desktop').innerHTML = detailHtml;
-
         } catch (err) { console.error(err); }
     }
 
@@ -627,52 +668,56 @@
         }
     }
 
-
+    
     // --- Mobile Swiping Logic ---
     let touchStartX = 0;
     let touchEndX = 0;
-    let isSwiping = false;
 
     const modalEl = document.getElementById('image-modal');
     modalEl.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
-        isSwiping = false;
-    }, {passive: true});
-
-    modalEl.addEventListener('touchmove', e => {
-        if (Math.abs(e.changedTouches[0].screenX - touchStartX) > 10) isSwiping = true;
     }, {passive: true});
 
     modalEl.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipe(e);
-    }, {passive: false});
+        handleSwipe();
+    }, {passive: true});
 
-    function handleSwipe(e) {
+    function handleSwipe() {
+        // Prevent swiping on desktop or when no list
         if (window.innerWidth >= 768 || globalLocationsList.length === 0) return;
 
+        // Find current index
         let idx = globalLocationsList.findIndex(loc => loc.filename === currentSelectedFile);
         if (idx === -1) return;
 
         const swipeThreshold = 50;
-        if (touchStartX - touchEndX > swipeThreshold) {
-            if (idx < globalLocationsList.length - 1) navigateToIndex(idx + 1);
-        } else if (touchEndX - touchStartX > swipeThreshold) {
-            if (idx > 0) navigateToIndex(idx - 1);
-        } else if (!isSwiping && e.target.id === 'image-modal') {
-            closeModal();
+        if (touchEndX < touchStartX - swipeThreshold) {
+            // Swiped Left -> Go backward in time / NEXT in array
+            // (Assuming array is sorted newest first, so NEXT index is older in time)
+            if (idx < globalLocationsList.length - 1) {
+                idx++;
+                navigateToIndex(idx);
+            }
+        }
+        if (touchEndX > touchStartX + swipeThreshold) {
+            // Swiped Right -> Go forward in time / PREV in array
+            if (idx > 0) {
+                idx--;
+                navigateToIndex(idx);
+            }
         }
     }
 
     function navigateToIndex(index) {
+        // Prevent event propagation issues stopping the click
         if(globalLocationsList[index]) {
             currentSelectedFile = globalLocationsList[index].filename;
             loadLocation(currentSelectedFile);
             renderSelectionHighlight();
         }
     }
-
-    fetchLocations();
+fetchLocations();
     setInterval(fetchLocations, 5000);
 </script>
 </body>
