@@ -154,8 +154,6 @@ services:
   # ------------------------------
   # 10) Twin2AR Frontend
   # ------------------------------
-
-
   ar_frontend:
     build:
       context: ../../Twin2AR/Frontend
@@ -163,6 +161,10 @@ services:
     restart: unless-stopped
     ports:
       - "8050:8050"   # host:container, adjust if needed
+    volumes:
+      # Maps your local Frontend folder to the container's working directory.
+      # Replace '/app' with the WORKDIR defined in the ar_frontend's Dockerfile.
+      - ../../Twin2AR/Frontend:/app
     networks:
       - default       # or your custom network
 

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AR Pose Viewer</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif;
+        }
+
+        #map {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1;
+        }
+
+        /* Map Legend for Arrow Colors */
+        #map-legend {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; }
+
+        #controls {
+            position: fixed; bottom: 25px; left: 20px; z-index: 1000;
+        }
+
+        .btn {
+            padding: 14px 24px; border-radius: 30px; background: #007bff; color: white;
+            border: none; font-size: 16px; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+        }
+        .btn:active { background: #0056b3; }
+
+        .thumbnail {
+            position: fixed; bottom: 25px; right: 20px; z-index: 1000;
+            width: 170px; height: 170px; border-radius: 15px; border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4); object-fit: cover;
+            cursor: pointer; display: none; transition: transform 0.2s; background: #ddd;
+        }
+        .thumbnail:active { transform: scale(0.95); }
+
+        #bottom-panel {
+            position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 560px; background: white; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3); transition: bottom 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 2000; max-height: 85vh; display: flex; flex-direction: column;
+        }
+        #bottom-panel.open { bottom: 0; }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; border-bottom: 1px solid #eee;
+        }
+        .panel-header h3 { margin: 0; font-size: 18px; }
+        .close-btn { background: none; border: none; font-size: 24px; color: #666; cursor: pointer; padding: 0; }
+        
+        .panel-content { padding: 16px; overflow-y: auto; }
+
+        .custom-list { display: flex; flex-direction: column; gap: 8px; max-height: 58vh; overflow-y: auto; }
+        .list-item {
+            padding: 12px 14px; background: #f9f9f9; border: 1px solid #ddd;
+            border-radius: 10px; font-size: 15px; cursor: pointer; transition: background 0.2s;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .list-item.selected { background: #e8f1ff; border-color: #7aaeff; }
+        
+        .list-text { flex: 1; min-width: 0; }
+        .list-name { font-weight: 600; word-break: break-word; }
+        .list-meta { font-size: 12px; color: #666; margin-top: 3px; }
+        .check-wrap { display: flex; align-items: center; justify-content: center; min-width: 28px; }
+        .check-wrap input { width: 20px; height: 20px; cursor: pointer; }
+
+        #image-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); z-index: 3000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #image-modal.active { opacity: 1; pointer-events: auto; }
+
+        #expanded-image {
+            max-width: 95vw; max-height: 85vh; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain; background: #111;
+        }
+
+        /* Toggle Details Button */
+        #btn-toggle-details {
+            position: absolute;
+            bottom: 60px;
+            padding: 12px 24px;
+            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 3001;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+
+        /* --- MOBILE FIRST (TIGHT & COMPACT) --- */
+        #expanded-info {
+            position: absolute;
+            bottom: 120px; 
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            padding: 8px;
+            border-radius: 8px;
+            width: min(96vw, 900px);
+            max-height: 65vh;
+            box-sizing: border-box;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+            text-align: left;
+            display: none; 
+            flex-direction: column;
+        }
+        #expanded-info.show { display: flex; }
+
+        /* Scrollable Row */
+        .details-row {
+            overflow-x: auto;
+            width: 100%;
+            padding-bottom: 4px;
+        }
+        .details-row.top-row {
+            border-bottom: 1px solid rgba(0,0,0,0.15);
+            margin-bottom: 6px; 
+        }
+
+        /* Wrapper for safe centering */
+        .details-wrapper {
+            display: flex;
+            gap: 6px; 
+            margin: 0 auto; /* Centers the content safely */
+            width: max-content; /* Prevents squishing */
+        }
+
+        .info-section {
+            width: max-content; 
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.03);
+            padding: 4px 6px; 
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .info-title {
+            font-weight: 800; font-size: 11.5px; margin-bottom: 3px;
+            color: #111; text-transform: uppercase; letter-spacing: 0.05em;
+            border-bottom: 1px solid #ccc; padding-bottom: 2px;
+        }
+
+        .info-grid { display: flex; flex-direction: column; gap: 1px; font-size: 12px; }
+        .info-row { white-space: nowrap; }
+        .info-row b { color: #444; }
+
+        .arrow-icon {
+            font-size: 36px; text-align: center; line-height: 36px; 
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 2px 5px rgba(0,0,0,0.5); 
+        }
+
+        .details-row::-webkit-scrollbar { height: 5px; }
+        .details-row::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+
+
+        /* --- DESKTOP SCALING (Wider screens) --- */
+        @media (min-width: 768px) {
+            #btn-toggle-details {
+                padding: 14px 32px;
+                font-size: 16px;
+                bottom: 60px;
+            }
+            #expanded-info {
+                padding: 20px;
+                border-radius: 16px;
+                bottom: 130px; /* Room for the button */
+            }
+            .details-row { padding-bottom: 8px; }
+            .details-row.top-row { margin-bottom: 16px; }
+            .details-wrapper { gap: 20px; } /* Relaxed gap for desktop */
+            
+            .info-section {
+                padding: 12px 18px;
+                border-radius: 10px;
+            }
+            .info-title {
+                font-size: 14px; margin-bottom: 8px;
+            }
+            .info-grid { gap: 4px; font-size: 14px; }
+            
+            .details-row::-webkit-scrollbar { height: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Map Legend -->
+<div id="map-legend">
+    <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div>Root</div>
+    <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div>Raw GPS</div>
+    <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div>VPS</div>
+</div>
+
+<div id="controls">
+    <button class="btn" onclick="togglePanel()">Select Pose</button>
+</div>
+
+<img id="thumbnail" class="thumbnail" onclick="openModal()" alt="Thumb">
+
+<div id="bottom-panel">
+    <div class="panel-header">
+        <h3>Select Pose</h3>
+        <button class="close-btn" onclick="closePanel()">✕</button>
+    </div>
+    <div class="panel-content">
+        <div id="pose-list" class="custom-list"></div>
+    </div>
+</div>
+
+<div id="image-modal" onclick="closeModal()">
+    <img id="expanded-image" alt="Expanded View">
+    <div id="expanded-info" onclick="event.stopPropagation()"></div>
+    <button id="btn-toggle-details" onclick="toggleDetails(event)">Show Details</button>
+</div>
+
+<!-- Leaflet & MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<script>
+    const cartoDb = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 19, attribution: '© OpenStreetMap © CARTO' });
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22, maxNativeZoom: 19, attribution: '© OpenStreetMap' });
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 22, maxNativeZoom: 19, attribution: '© Esri' });
+
+    const map = L.map('map', { zoomControl: false, layers: [cartoDb], maxZoom: 22 }).setView([47.53, 7.64], 17);
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+    L.control.layers({ "CartoDB": cartoDb, "OpenStreetMap": osm, "Satellite": satellite }, null, { position: 'topright' }).addTo(map);
+
+    // Initialize Spiderfy Cluster Group
+    const markerCluster = L.markerClusterGroup({
+        maxClusterRadius: 35, 
+        spiderfyDistanceMultiplier: 1.5, 
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true
+    });
+    map.addLayer(markerCluster);
+
+    let currentSelectedFile = null;
+
+    const poseList = document.getElementById('pose-list');
+    const thumbnail = document.getElementById('thumbnail');
+    const expandedImage = document.getElementById('expanded-image');
+    const expandedInfo = document.getElementById('expanded-info');
+
+    function safeTimeFromFilename(filename) {
+        const m = filename.match(/location_(\d+)\.json$/);
+        if (!m) return filename;
+        const date = new Date(parseInt(m[1], 10) * 1000);
+        return date.toLocaleString();
+    }
+
+    function fmt(value, digits = 3) {
+        if (value === null || value === undefined || value === "") return "-";
+        const num = Number(value);
+        return Number.isFinite(num) ? num.toFixed(digits) : String(value);
+    }
+
+    function makeSection(title, rows, colorHex = null) {
+        const validRows = rows.filter(row => row.value !== undefined && row.value !== "-");
+        if (!validRows.length) return "";
+        
+        let titleStyle = colorHex ? `color: ${colorHex}; border-bottom-color: ${colorHex};` : "";
+        return `
+            <div class="info-section">
+                <div class="info-title" style="${titleStyle}">${title}</div>
+                <div class="info-grid">
+                    ${validRows.map(row => `<div class="info-row"><b>${row.label}:</b> ${row.value}</div>`).join("")}
+                </div>
+            </div>
+        `;
+    }
+
+    function buildDetailHtml(data) {
+        const rootSection = makeSection("Root Pose", [
+            { label: "Lat", value: fmt(data.latitude, 6) },
+            { label: "Lon", value: fmt(data.longitude, 6) },
+            { label: "Alt", value: fmt(data.altitude, 2) + "m" },
+            { label: "Heading", value: fmt(data.heading, 1) + "°" },
+            { label: "Pitch", value: fmt(data.pitch, 1) + "°" },
+            { label: "Roll", value: fmt(data.roll, 1) + "°" }
+        ], "#e74c3c");
+
+        const rawGPS = data.rawGPS || {};
+        const rawGpsSection = makeSection("Raw GPS", [
+            { label: "Lat", value: fmt(rawGPS.latitude, 6) },
+            { label: "Lon", value: fmt(rawGPS.longitude, 6) },
+            { label: "Alt", value: rawGPS.altitude !== undefined ? fmt(rawGPS.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: rawGPS.horizontalAccuracy !== undefined ? fmt(rawGPS.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: rawGPS.verticalAccuracy !== undefined ? fmt(rawGPS.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: rawGPS.heading !== undefined ? fmt(rawGPS.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: rawGPS.headingAccuracy !== undefined ? fmt(rawGPS.headingAccuracy, 1) + "°" : undefined }
+        ], "#3498db");
+
+        const vps = data.vps || {};
+        const vpsSection = makeSection("VPS", [
+            { label: "Lat", value: fmt(vps.latitude, 6) },
+            { label: "Lon", value: fmt(vps.longitude, 6) },
+            { label: "Alt", value: vps.altitude !== undefined ? fmt(vps.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: vps.horizontalAccuracy !== undefined ? fmt(vps.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: vps.verticalAccuracy !== undefined ? fmt(vps.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: vps.heading !== undefined ? fmt(vps.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: vps.headingAccuracy !== undefined ? fmt(vps.headingAccuracy, 1) + "°" : undefined },
+            { label: "Pitch", value: vps.pitch !== undefined ? fmt(vps.pitch, 1) + "°" : undefined },
+            { label: "Roll", value: vps.roll !== undefined ? fmt(vps.roll, 1) + "°" : undefined }
+        ], "#2ecc71");
+
+        const osmOrigin = data.osmOrigin || {};
+        const osmSection = makeSection("OSM Origin", [
+            { label: "Lat", value: fmt(osmOrigin.latitude, 6) },
+            { label: "Lon", value: fmt(osmOrigin.longitude, 6) },
+            { label: "Alt", value: osmOrigin.altitude !== undefined ? fmt(osmOrigin.altitude, 2) + "m" : undefined }
+        ]);
+
+        const unityRig = data.unityRig || {};
+        const unityRigSection = makeSection("Unity Rig", [
+            { label: "Pos X", value: fmt(unityRig.posX, 3) },
+            { label: "Pos Y", value: fmt(unityRig.posY, 3) },
+            { label: "Pos Z", value: fmt(unityRig.posZ, 3) },
+            { label: "Rot X", value: fmt(unityRig.rotX, 4) },
+            { label: "Rot Y", value: fmt(unityRig.rotY, 4) },
+            { label: "Rot Z", value: fmt(unityRig.rotZ, 4) },
+            { label: "Rot W", value: fmt(unityRig.rotW, 4) }
+        ]);
+
+        return `
+            <div class="details-row top-row">
+                <div class="details-wrapper">
+                    ${rootSection} ${rawGpsSection} ${vpsSection}
+                </div>
+            </div>
+            <div class="details-row">
+                <div class="details-wrapper">
+                    ${osmSection} ${unityRigSection}
+                </div>
+            </div>
+        `;
+    }
+
+    async function fetchLocations() {
+        try {
+            const res = await fetch('/api/locations', { cache: 'no-store' });
+            const locations = await res.json();
+            poseList.innerHTML = '';
+
+            if (!Array.isArray(locations) || locations.length === 0) {
+                poseList.innerHTML = '<div style="padding:10px;">No data available</div>';
+                return;
+            }
+
+            locations.forEach(loc => {
+                const filename = loc.filename;
+                const isSelected = !!loc.selected;
+                const hasImage = !!loc.has_image;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'list-item';
+                if (filename === currentSelectedFile) itemDiv.classList.add('selected');
+
+                const textDiv = document.createElement('div');
+                textDiv.className = 'list-text';
+                textDiv.innerHTML = `
+                    <div class="list-name">${filename}</div>
+                    <div class="list-meta">${safeTimeFromFilename(filename)}${hasImage ? '' : ' · no jpg'}</div>
+                `;
+                textDiv.onclick = () => {
+                    currentSelectedFile = filename;
+                    loadLocation(filename);
+                    renderSelectionHighlight();
+                };
+
+                const checkWrap = document.createElement('div');
+                checkWrap.className = 'check-wrap';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = isSelected;
+                checkbox.onclick = async (e) => {
+                    e.stopPropagation();
+                    await toggleSelection(filename, checkbox.checked);
+                };
+
+                checkWrap.appendChild(checkbox);
+                itemDiv.appendChild(textDiv);
+                itemDiv.appendChild(checkWrap);
+                poseList.appendChild(itemDiv);
+            });
+
+            if (!currentSelectedFile && locations.length > 0) {
+                currentSelectedFile = locations[0].filename;
+                loadLocation(currentSelectedFile);
+                renderSelectionHighlight();
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    function renderSelectionHighlight() {
+        document.querySelectorAll('.list-item').forEach(item => item.classList.remove('selected'));
+        document.querySelectorAll('.list-name').forEach((nameEl) => {
+            if (nameEl.textContent === currentSelectedFile) nameEl.closest('.list-item').classList.add('selected');
+        });
+    }
+
+    async function toggleSelection(filename, isChecked) {
+        try {
+            await fetch('/api/select', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: filename, selected: isChecked })
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    function addArrow(lat, lon, heading, color, zOffset) {
+        if (typeof lat !== 'number' || typeof lon !== 'number' || (lat === 0 && lon === 0)) return;
+        
+        const iconHtml = `<div class="arrow-icon" style="color: ${color}; transform: rotate(${heading || 0}deg);">⬆</div>`;
+        const customIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [36, 36], iconAnchor: [18, 18] });
+        
+        const marker = L.marker([lat, lon], { icon: customIcon, zIndexOffset: zOffset });
+        markerCluster.addLayer(marker);
+    }
+
+    async function loadLocation(filename) {
+        try {
+            const res = await fetch('/data/' + filename, { cache: 'no-store' });
+            const data = await res.json();
+
+            markerCluster.clearLayers();
+
+            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300); // Root: Red
+            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200); // Raw: Blue
+            if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100); // VPS: Green
+
+            const bounds = markerCluster.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { maxZoom: 21, padding: [30, 30] });
+            }
+
+            const imgSrc = '/data/' + filename.replace('.json', '.jpg');
+            thumbnail.src = imgSrc;
+            thumbnail.style.display = 'block';
+            thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
+
+            expandedImage.src = imgSrc;
+            expandedInfo.innerHTML = buildDetailHtml(data);
+        } catch (err) { console.error(err); }
+    }
+
+    function togglePanel() { document.getElementById('bottom-panel').classList.toggle('open'); }
+    function closePanel() { document.getElementById('bottom-panel').classList.remove('open'); }
+    
+    function openModal() { document.getElementById('image-modal').classList.add('active'); }
+    function closeModal() { 
+        document.getElementById('image-modal').classList.remove('active'); 
+        document.getElementById('expanded-info').classList.remove('show');
+        document.getElementById('btn-toggle-details').innerText = 'Show Details';
+    }
+
+    function toggleDetails(e) {
+        e.stopPropagation();
+        const info = document.getElementById('expanded-info');
+        const btn = document.getElementById('btn-toggle-details');
+        
+        if (info.classList.contains('show')) {
+            info.classList.remove('show');
+            btn.innerText = 'Show Details';
+        } else {
+            info.classList.add('show');
+            btn.innerText = 'Hide Details';
+        }
+    }
+
+    fetchLocations();
+    setInterval(fetchLocations, 5000);
+</script>
+</body>
+</html>
