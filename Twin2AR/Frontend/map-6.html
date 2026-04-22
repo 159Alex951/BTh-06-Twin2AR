@@ -160,7 +160,7 @@
 
         #expanded-info-mobile {
             position: absolute; bottom: 120px; padding: 8px; border-radius: 8px;
-            width: max-content; max-width: 96vw; max-height: 65vh;
+            width: max-content; max-width: 96vw; /* max-height: 65vh; Removed to fit new row */
         }
 
         /* --- Shared Inner Details Content --- */
@@ -279,7 +279,8 @@
 </div>
 
 <!-- Full Image Modal (Mobile) -->
-<div id="image-modal" onclick="closeModal()">
+<div id="image-modal" onclick="handleModalClick(event)">
+    <div id="modal-filename" style="position: absolute; top: 20px; color: white; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px; z-index: 3002; display: none;"></div>
     <img id="expanded-image" alt="Expanded View">
     <div id="expanded-info-mobile" class="expanded-info" onclick="event.stopPropagation()"></div>
     <button id="btn-details-mobile" class="btn-details" onclick="toggleDetailsMobile(event)">Show Details</button>
@@ -312,6 +313,8 @@
     map.addLayer(markerCluster);
 
     let currentSelectedFile = null;
+    let globalLocationsList = [];
+    let currentIdx = -1;
     let favModeActive = false;
 
     const poseList = document.getElementById('pose-list');
@@ -365,6 +368,7 @@
         try {
             const res = await fetch('/api/locations', { cache: 'no-store' });
             const locations = await res.json();
+            globalLocationsList = locations || [];
             poseList.innerHTML = '';
 
             if (!Array.isArray(locations) || locations.length === 0) {
@@ -520,14 +524,11 @@
       // --- NEW CORRECTIONS SECTION ---
       const corrections = data.corrections || {};
       const correctionsSection = makeSection('Corrections Filters', [
-        { label: 'Sync', value: corrections.hasHeadingFix ? 'Yes' : 'No' },
-        { label: 'H.Corr', value: fmt(corrections.headingCorrectionApplied ?? 0, 1) + '°' },
-        { label: 'Topo Fix', value: corrections.hasSwisstopoFix ? 'Yes' : 'No' },
-        { label: 'Topo Alt', value: fmt(corrections.swisstopoHeight ?? 0, 2) + 'm' },
-        { label: 'Alt Diff', value: fmt(corrections.vpsHeightDifference ?? 0, 2) + 'm' },
-        { label: 'VPS Alt', value: fmt(corrections.rawVpsAltitude ?? 0, 2) + 'm' },
-        { label: 'Cam Y', value: fmt(corrections.cameraLocalY ?? 0, 3) },
-        { label: 'Cesm Alt', value: fmt(corrections.finalCesiumGeoreferenceHeight ?? 0, 2) + 'm' }
+        { label: 'Sync', value: corrections.hasHeadingFix !== undefined ? (corrections.hasHeadingFix ? 'Yes' : 'No') : undefined },
+        { label: 'H.Corr', value: corrections.headingCorrectionApplied !== undefined ? fmt(corrections.headingCorrectionApplied, 1) + '°' : undefined },
+        { label: 'Topo Fix', value: corrections.hasSwisstopoFix !== undefined ? (corrections.hasSwisstopoFix ? 'Yes' : 'No') : undefined },
+        { label: 'Topo Alt', value: corrections.swisstopoHeight !== undefined ? fmt(corrections.swisstopoHeight, 2) + 'm' : undefined },
+        { label: 'Alt Diff', value: corrections.vpsHeightDifference !== undefined ? fmt(corrections.vpsHeightDifference, 2) + 'm' : undefined }
       ], '#9b59b6'); // Purple header to distinguish from sensors and internal engine data
 
       return `
@@ -563,7 +564,18 @@
             thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
 
             expandedImage.src = imgSrc;
-            
+
+            // Show filename on mobile
+            const fnameEl = document.getElementById('modal-filename');
+            if (fnameEl) {
+                if (window.innerWidth < 768) {
+                    fnameEl.innerText = filename;
+                    fnameEl.style.display = 'block';
+                } else {
+                    fnameEl.style.display = 'none';
+                }
+            }
+
             const detailHtml = buildDetailHtml(data);
         document.getElementById('expanded-info-mobile').innerHTML = detailHtml;
         document.getElementById('expanded-info-desktop').innerHTML = detailHtml;
@@ -583,6 +595,13 @@
     }
 
     function openModal() { document.getElementById('image-modal').classList.add('active'); }
+    
+    function handleModalClick(e) {
+        if (e.target.id === 'image-modal' && !isSwiping) {
+            closeModal();
+        }
+    }
+
     function closeModal() { 
         document.getElementById('image-modal').classList.remove('active'); 
         document.getElementById('expanded-info-mobile').classList.remove('show');
@@ -612,6 +631,49 @@
         } else {
             info.classList.add('show');
             btn.innerText = 'Hide Details';
+        }
+    }
+
+
+    // --- Mobile Swiping Logic ---
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let isSwiping = false;
+
+    const modalEl = document.getElementById('image-modal');
+    modalEl.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+        isSwiping = false;
+    }, {passive: true});
+
+    modalEl.addEventListener('touchmove', e => {
+        if (Math.abs(e.changedTouches[0].screenX - touchStartX) > 10) isSwiping = true;
+    }, {passive: true});
+
+    modalEl.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe(e);
+    }, {passive: false});
+
+    function handleSwipe(e) {
+        if (window.innerWidth >= 768 || globalLocationsList.length === 0) return;
+
+        let idx = globalLocationsList.findIndex(loc => loc.filename === currentSelectedFile);
+        if (idx === -1) return;
+
+        const swipeThreshold = 50;
+        if (touchStartX - touchEndX > swipeThreshold) {
+            if (idx < globalLocationsList.length - 1) navigateToIndex(idx + 1);
+        } else if (touchEndX - touchStartX > swipeThreshold) {
+            if (idx > 0) navigateToIndex(idx - 1);
+        }
+    }
+
+    function navigateToIndex(index) {
+        if(globalLocationsList[index]) {
+            currentSelectedFile = globalLocationsList[index].filename;
+            loadLocation(currentSelectedFile);
+            renderSelectionHighlight();
         }
     }
 

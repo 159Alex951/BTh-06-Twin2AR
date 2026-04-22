@@ -359,7 +359,54 @@
         `;
     }
 
-    
+    function buildDetailHtml(data) {
+        const rootSection = makeSection("Root Pose", [
+            { label: "Lat", value: fmt(data.latitude, 6) }, { label: "Lon", value: fmt(data.longitude, 6) },
+            { label: "Alt", value: fmt(data.altitude, 2) + "m" }, { label: "Heading", value: fmt(data.heading, 1) + "°" },
+            { label: "Pitch", value: fmt(data.pitch, 1) + "°" }, { label: "Roll", value: fmt(data.roll, 1) + "°" }
+        ], "#e74c3c");
+
+        const rawGPS = data.rawGPS || {};
+        const rawGpsSection = makeSection("Raw GPS", [
+            { label: "Lat", value: fmt(rawGPS.latitude, 6) }, { label: "Lon", value: fmt(rawGPS.longitude, 6) },
+            { label: "Alt", value: rawGPS.altitude !== undefined ? fmt(rawGPS.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: rawGPS.horizontalAccuracy !== undefined ? fmt(rawGPS.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: rawGPS.verticalAccuracy !== undefined ? fmt(rawGPS.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: rawGPS.heading !== undefined ? fmt(rawGPS.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: rawGPS.headingAccuracy !== undefined ? fmt(rawGPS.headingAccuracy, 1) + "°" : undefined }
+        ], "#3498db");
+
+        const vps = data.vps || {};
+        const vpsSection = makeSection("VPS", [
+            { label: "Lat", value: fmt(vps.latitude, 6) }, { label: "Lon", value: fmt(vps.longitude, 6) },
+            { label: "Alt", value: vps.altitude !== undefined ? fmt(vps.altitude, 2) + "m" : undefined },
+            { label: "H Acc", value: vps.horizontalAccuracy !== undefined ? fmt(vps.horizontalAccuracy, 2) + "m" : undefined },
+            { label: "V Acc", value: vps.verticalAccuracy !== undefined ? fmt(vps.verticalAccuracy, 2) + "m" : undefined },
+            { label: "Head", value: vps.heading !== undefined ? fmt(vps.heading, 1) + "°" : undefined },
+            { label: "Hd Acc", value: vps.headingAccuracy !== undefined ? fmt(vps.headingAccuracy, 1) + "°" : undefined },
+            { label: "Pitch", value: vps.pitch !== undefined ? fmt(vps.pitch, 1) + "°" : undefined },
+            { label: "Roll", value: vps.roll !== undefined ? fmt(vps.roll, 1) + "°" : undefined }
+        ], "#2ecc71");
+
+        const osmOrigin = data.osmOrigin || {};
+        const osmSection = makeSection("OSM Origin", [
+            { label: "Lat", value: fmt(osmOrigin.latitude, 6) }, { label: "Lon", value: fmt(osmOrigin.longitude, 6) },
+            { label: "Alt", value: osmOrigin.altitude !== undefined ? fmt(osmOrigin.altitude, 2) + "m" : undefined }
+        ]);
+
+        const unityRig = data.unityRig || {};
+        const unityRigSection = makeSection("Unity Rig", [
+            { label: "Pos X", value: fmt(unityRig.posX, 3) }, { label: "Pos Y", value: fmt(unityRig.posY, 3) },
+            { label: "Pos Z", value: fmt(unityRig.posZ, 3) }, { label: "Rot X", value: fmt(unityRig.rotX, 4) },
+            { label: "Rot Y", value: fmt(unityRig.rotY, 4) }, { label: "Rot Z", value: fmt(unityRig.rotZ, 4) },
+            { label: "Rot W", value: fmt(unityRig.rotW, 4) }
+        ]);
+
+        return `
+            <div class="details-row top-row"><div class="details-wrapper">${rootSection} ${rawGpsSection} ${vpsSection}</div></div>
+            <div class="details-row"><div class="details-wrapper">${osmSection} ${unityRigSection}</div></div>
+        `;
+    }
 
     async function fetchLocations() {
         try {
@@ -465,6 +512,29 @@
         markerCluster.addLayer(marker);
     }
 
+    async function loadLocation(filename) {
+        try {
+            const res = await fetch('/data/' + filename, { cache: 'no-store' });
+            const data = await res.json();
+
+            markerCluster.clearLayers();
+
+            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300);
+            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200);
+            if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100);
+
+            const bounds = markerCluster.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { maxZoom: 21, padding: [30, 30] });
+            }
+
+            const imgSrc = '/data/' + filename.replace('.json', '.jpg');
+            thumbnail.src = imgSrc;
+            thumbnail.style.display = 'block';
+            thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
+
+            expandedImage.src = imgSrc;
+            
     function buildDetailHtml(data) {
       const rootSection = makeSection('Root Pose', [
         { label: 'Lat', value: fmt(data.latitude, 6) },
@@ -540,33 +610,6 @@
         <div class="details-row"><div class="details-wrapper">${osmSection} ${unityRigSection}</div></div>
       `;
     }
-
-    async function loadLocation(filename) {
-        try {
-            const res = await fetch('/data/' + filename, { cache: 'no-store' });
-            const data = await res.json();
-
-            markerCluster.clearLayers();
-
-            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300);
-            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200);
-            if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100);
-
-            const bounds = markerCluster.getBounds();
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, { maxZoom: 21, padding: [30, 30] });
-            }
-
-            const imgSrc = '/data/' + filename.replace('.json', '.jpg');
-            thumbnail.src = imgSrc;
-            thumbnail.style.display = 'block';
-            thumbnail.onerror = () => { thumbnail.style.display = 'none'; };
-
-            expandedImage.src = imgSrc;
-            
-            const detailHtml = buildDetailHtml(data);
-        document.getElementById('expanded-info-mobile').innerHTML = detailHtml;
-        document.getElementById('expanded-info-desktop').innerHTML = detailHtml;
 
         } catch (err) { console.error(err); }
     }
