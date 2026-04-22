@@ -109,6 +109,6 @@ print(f"\nEnriched shape: {gdf_enriched.shape}")
 print(gdf_enriched[["egid", "garea", "gvol", "gastw"]].head())
 
 # ── 6. SAVE ───────────────────────────────────────────────────────────────────
-out_file = "whatamidoing_test.geojson" if TEST_MODE else "whatanidoing.geojson"
+out_file = "whatamidoing_test.geojson" if TEST_MODE else "whatamidoing.geojson"
 gdf_enriched.to_file(out_file, driver="GeoJSON")
 print(f"\nSaved final enriched GeoJSON → {out_file}")
