@@ -40,11 +40,12 @@ function Get-ComposeProjectName {
 $ComposeProjectName = Get-ComposeProjectName
 $NetworkName = "${ComposeProjectName}_default"
 
-$citydbContainerId = (& docker-compose -f $ComposeFile ps -q $dbHost) 2>$null
-if ([string]::IsNullOrWhiteSpace($citydbContainerId)) {
-    Write-Host "      FEHLER: Service '$dbHost' läuft nicht. Starte mit: docker-compose up -d $dbHost" -ForegroundColor Red
-    exit 1
-}
+$citydbContainerId = "b2b08ac48f9ffeb6a7102566f1c788ad8b233cf03a54b332c07ecb0b6dd68697" # workaround for powershell error
+# $citydbContainerId = (& docker-compose -f $ComposeFile ps -q $dbHost) 2>$null
+# if ([string]::IsNullOrWhiteSpace($citydbContainerId)) {
+#     Write-Host "      FEHLER: Service '$dbHost' läuft nicht. Starte mit: docker-compose up -d $dbHost" -ForegroundColor Red
+#     exit 1
+# }
 
 # 1) Output-Verzeichnis vorbereiten
 Write-Host "`n[1/4] Bereite Output-Verzeichnis vor..." -ForegroundColor Yellow
@@ -126,20 +127,34 @@ Write-Host "`n      Starte pg2b3dm Export..." -ForegroundColor Cyan
 # Ausfuehren (direkter Befehl, kein multi-line)
 docker run --rm `
     --network $NetworkName `
-  -v "${outputDir}:/output" `
-  -e PGPASSWORD=$dbPassword `
-  geodan/pg2b3dm `
-  pg2b3dm `
-    -h $dbHost `
-    -U $dbUser `
-    -d $dbName `
-        -t citydb.v_gebaeude_erweitert `
-        -q "$exportQueryOneLine" `
-    -c geom `
-    -a "id,egid,objektart,baujahr,strasse,hausnummer,plz,gemeinde,dach_max,gelaendepunkt,anzahl_wohnungen" `
+    -v "${outputDir}:/output" `
+    geodan/pg2b3dm `
+    pg2b3dm `
+        --connection "Host=$dbHost;Username=$dbUser;Password=$dbPassword;Database=$dbName;CommandTimeOut=0" `
+        -t "citydb.v_gebaeude_erweitert" `
+        -c "citydb_geometry" `
+        -a "egid,objektart,baujahr,strasse,hausnummer,plz,gemeinde,dach_max,gelaendepunkt,anzahl_wohnungen" `
+        -q "citydb_geometry IS NOT NULL" `
         -g 500 `
         --use_implicit_tiling false `
-    -o /output
+        -o "/output"
+
+
+# docker run --rm `
+#     --network $NetworkName `
+#     -v "${outputDir}:/output" `
+#     -e PGPASSWORD=$dbPassword `
+#     geodan/pg2b3dm `
+#     pg2b3dm `
+#         -h $dbHost `
+#         -U $dbUser `
+#         -d $dbName `
+#         -q "$exportQueryOneLine" `
+#         -c geom `
+#         -a "id,egid,objektart,baujahr,strasse,hausnummer,plz,gemeinde,dach_max,gelaendepunkt,anzahl_wohnungen" `
+#         -g 500 `
+#         --use_implicit_tiling false `
+#         -o /output
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`n      FEHLER beim Export!" -ForegroundColor Red

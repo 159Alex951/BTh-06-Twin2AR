@@ -108,7 +108,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${DATA_ROOT}/pgdata:/var/lib/postgresql/data
+      - ${DATA_ROOT}/pgdata:/var/lib/postgresql
     restart: unless-stopped
 
   # ------------------------------
