@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 #################################################################
 # docker-compose.yml - Geobasiszwilling Umgebung
@@ -165,7 +165,6 @@ services:
       # Maps your local Frontend folder to the container's working directory.
       # Replace '/app' with the WORKDIR defined in the ar_frontend's Dockerfile.
       - ../../Twin2AR/Frontend:/app
-      - ./output:/Geobasiszwilling/geobasiszwilling_fhnw/output
     networks:
       - default       # or your custom network
 
