@@ -19,13 +19,27 @@ Geobasiszwilling/geobasiszwilling_fhnw/import/mesh/*
 Geobasiszwilling/geobasiszwilling_fhnw/import/point/*
 Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/*
 Geobasiszwilling/geobasiszwilling_fhnw/import/terrain/*
-Geobasiszwilling/geobasiszwilling_fhnw/output/*
 Geobasiszwilling/geobasiszwilling_fhnw/pgdata/*
 Geobasiszwilling/geobasiszwilling_fhnw/nginx/*
 Geobasiszwilling/geobasiszwilling_fhnw/.obsidian/*
 Geobasiszwilling/geobasiszwilling_fhnw/.vscode/*
+
+
+Geobasiszwilling/geobasiszwilling_fhnw/output/buildings/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/buildings_bfs/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/buildings_bfs_400m/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/pointcloud/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/terrain_qm/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/roofs/*
+Geobasiszwilling/geobasiszwilling_fhnw/output/point*
+Geobasiszwilling/geobasiszwilling_fhnw/output/mesh/*
+
+
+
+
 Twin2AR/Analyse/*.geojson
 Twin2AR/Analyse/gwr_chunks/*
+
 
 
 # Zu Grosse Daten für GitHub sind auf dem S Laufwerk gespeichert:
