@@ -20,6 +20,41 @@
             }
           });
         }
+
+        // Buildings BFS 400m Tileset
+        let buildingsBfs400mTileset = null;
+        const chkBuildingsBfs400m = document.getElementById('chkBuildingsBFS400m');
+
+        async function loadBuildingsBfs400mTileset() {
+            if (buildingsBfs400mTileset) return buildingsBfs400mTileset;
+            
+            // use global baseUrl
+            const baseUrl = `http://${window.LOCAL_IP || window.location.hostname + ':8083'}`;
+            const tilesetUrl = `${baseUrl}/buildings_bfs_400m/tileset.json`;
+
+            buildingsBfs400mTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+            
+            buildingsBfs400mTileset.shadows = Cesium.ShadowMode.ENABLED;
+            buildingsBfs400mTileset.maximumScreenSpaceError = 4.0;
+            buildingsBfs400mTileset.dynamicScreenSpaceError = true;
+
+            window.viewer.scene.primitives.add(buildingsBfs400mTileset);
+            window.buildingsBfs400mTileset = buildingsBfs400mTileset;
+            buildingsBfs400mTileset.show = chkBuildingsBfs400m.checked;
+            return buildingsBfs400mTileset;
+        }
+
+        if (chkBuildingsBfs400m) {
+            chkBuildingsBfs400m.addEventListener('change', async () => {
+                if (chkBuildingsBfs400m.checked) {
+                    await loadBuildingsBfs400mTileset();
+                    if (buildingsBfs400mTileset) buildingsBfs400mTileset.show = true;
+                } else {
+                    if (buildingsBfs400mTileset) buildingsBfs400mTileset.show = false;
+                }
+            });
+        }
+
         // start new
         let projectedBuildingsDataSource = null;
         const chkProjectedBuildings = document.getElementById('chkProjectedBuildings');
@@ -119,7 +154,13 @@
         
 
 
-        // start new
+
+
+
+
+
+
+
         let projectedBuildingsDataSource2 = null;
         const chkProjectedBuildings2 = document.getElementById('chkProjectedBuildings2');
 

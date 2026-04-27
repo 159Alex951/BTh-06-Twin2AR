@@ -20,11 +20,12 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $ComposeFile = Join-Path $RepoRoot 'docker-compose.yml'
 
 $serviceName = 'citydb_pg'
-$containerId = (& docker-compose -f $ComposeFile ps -q $serviceName) 2>$null
-if ([string]::IsNullOrWhiteSpace($containerId)) {
-    Write-Host "      FEHLER: Service '$serviceName' läuft nicht. Starte mit: docker-compose up -d $serviceName" -ForegroundColor Red
-    exit 1
-}
+$containerId = 'b2b08ac48f9ffeb6a7102566f1c788ad8b233cf03a54b332c07ecb0b6dd68697' # workaround for powershell error
+# $containerId = (& docker-compose -f $ComposeFile ps -q $serviceName) 2>$null
+# if ([string]::IsNullOrWhiteSpace($containerId)) {
+#     Write-Host "      FEHLER: Service '$serviceName' läuft nicht. Starte mit: docker-compose up -d $serviceName" -ForegroundColor Red
+#     exit 1
+# }
 
  # 1) Tabelle erstellen (falls noch nicht vorhanden)
 Write-Host "`n[1/4] Erstelle BFS-Tabelle..." -ForegroundColor Yellow
@@ -185,7 +186,7 @@ ON CONFLICT (egid) DO UPDATE SET
     fetched_at = NOW();
 "@
                 
-                $insertResult = docker exec $containerName psql -U postgres -d postgres -c $insertSql 2>&1
+                $insertResult = docker exec $containerId psql -U postgres -d postgres -c $insertSql 2>&1
                 
                 if ($LASTEXITCODE -eq 0) {
                     $successCount++
@@ -215,8 +216,8 @@ Write-Host "`n[5/5] Erstelle View..." -ForegroundColor Yellow
 
 $viewScript = "c:\_data\terrain_V5\import\building\02_create_view_gebaeude_erweitert.sql"
 if (Test-Path $viewScript) {
-    docker cp $viewScript "${containerName}:/tmp/create_view.sql"
-    docker exec $containerName psql -U postgres -d postgres -f /tmp/create_view.sql
+    docker cp $viewScript "${containerId}:/tmp/create_view.sql"
+    docker exec $containerId psql -U postgres -d postgres -f /tmp/create_view.sql
     Write-Host "      View citydb.v_gebaeude_erweitert erstellt" -ForegroundColor Green
 } else {
     Write-Host "      WARNUNG: $viewScript nicht gefunden!" -ForegroundColor Yellow
@@ -239,6 +240,6 @@ SELECT
 FROM citydb.v_gebaeude_erweitert bfs;
 "@
 
-docker exec $containerName psql -U postgres -d postgres -c $statsQuery
+docker exec $containerId psql -U postgres -d postgres -c $statsQuery
 
 Write-Host "`nFertig! Nutze View: SELECT * FROM citydb.v_gebaeude_erweitert LIMIT 10;" -ForegroundColor Cyan
