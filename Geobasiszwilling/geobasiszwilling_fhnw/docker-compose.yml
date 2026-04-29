@@ -166,6 +166,7 @@ services:
       # Replace '/app' with the WORKDIR defined in the ar_frontend's Dockerfile.
       - ../../Twin2AR/Frontend:/app
       - ./output:/Geobasiszwilling/geobasiszwilling_fhnw/output
+      - D:\Unity\REALBACKEND\BTh-06-Twin2AR\Geobasiszwilling\geobasiszwilling_fhnw\output:/Geobasiszwilling/geobasiszwilling_fhnw/output
     networks:
       - default       # or your custom network
 

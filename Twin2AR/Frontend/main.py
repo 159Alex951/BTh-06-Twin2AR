@@ -16,21 +16,42 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_DIR = os.path.join(BASE_DIR, "test_data", "inputs")
 SELECT_DIR = os.path.join(BASE_DIR, "test_data", "selections")
 MAP_PATH = os.path.join(BASE_DIR, "map.html")
+
+# Correct Relative Path Calculation:
+# BASE_DIR evaluates to: .../BTh-06-Twin2AR/Twin2AR/Frontend
+# We go up 2 levels back to root (BTh-06-Twin2AR), then down into the target
 OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "Geobasiszwilling", "geobasiszwilling_fhnw", "output"))
 
+# Standard Directories
 os.makedirs(TEST_DIR, exist_ok=True)
 os.makedirs(SELECT_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Let FastAPI crash on startup if the directory is completely missing.
+# If this crashes Docker, it means your docker-compose.yml volume mount is missing or wrong!
+if not os.path.exists(OUTPUT_DIR):
+    raise RuntimeError(f"CRITICAL ERROR: Tile directory missing! {OUTPUT_DIR} does not exist in this container. Mount it in docker-compose.yml!")
 
 app.mount("/data", StaticFiles(directory=TEST_DIR), name="data")
 app.mount("/output", StaticFiles(directory=OUTPUT_DIR), name="output")
-
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
-
+@app.get("/api/check-tiles")
+async def check_tiles():
+    # Append content to the check since that's where the actual files are!
+    glb_dir = os.path.join(OUTPUT_DIR, "buildings_bfs_400m_glb", "content")
+    if not os.path.exists(glb_dir):
+        return {"error": f"Directory not found: {glb_dir}"}
+        
+    files = glob.glob(os.path.join(glb_dir, "*.glb"))
+    return {
+        "status": "success",
+        "output_path_used": OUTPUT_DIR,
+        "total_glb_files_found": len(files),
+        "sample_files": [os.path.basename(f) for f in files[:5]]
+    }
 @app.get("/api/locations")
 async def get_locations():
     files = glob.glob(os.path.join(TEST_DIR, "*.json"))
@@ -47,7 +68,6 @@ async def get_locations():
         })
 
     return locations
-
 
 @app.post("/api/select")
 async def select_location(request: Request):
@@ -81,12 +101,10 @@ async def select_location(request: Request):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-
 @app.get("/map", response_class=HTMLResponse)
 async def serve_map():
     with open(MAP_PATH, "r", encoding="utf-8") as f:
         return f.read()
-
 
 class ARPoseDef(BaseModel):
     latitude: float
@@ -96,7 +114,6 @@ class ARPoseDef(BaseModel):
     pitch: float
     roll: float
     timestamp: float
-
 
 @app.post("/align")
 async def align_image(
