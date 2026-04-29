@@ -177,7 +177,10 @@ def main():
                         for p in pts:
                             lon, lat = p[0], p[1]
                             alt = p[2] if len(p) > 2 else 0.0
-                            verts.append(to_enu(lon, lat, alt, ax, ay, az, sin_lon, cos_lon, sin_lat, cos_lat))
+                            e, n, u = to_enu(lon, lat, alt, ax, ay, az, sin_lon, cos_lon, sin_lat, cos_lat)
+                            # Convert ENU (Z-up) to glTF natively expected Y-up coordinate system
+                            # X = East, Y = Up, Z = South (-North)
+                            verts.append((e, u, -n))
                         
                         # Add vertices to the building mesh
                         b_verts.extend(verts)
