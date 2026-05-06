@@ -110,6 +110,12 @@ def main():
         glb_name = f"{name_x}_{name_y}.glb"
         glb_path = out_dir / glb_name
 
+        # Calculate exact center anchor for this specific tile
+        tile_lon, tile_lat = lv95_to_wgs84.transform(g["cx"], g["cy"])
+        tax, tay, taz = wgs84_to_ecef.transform(tile_lon, tile_lat, 0.0)
+        tsin_lon, tcos_lon = math.sin(math.radians(tile_lon)), math.cos(math.radians(tile_lon))
+        tsin_lat, tcos_lat = math.sin(math.radians(tile_lat)), math.cos(math.radians(tile_lat))
+
         buildings_query = f"""
         SELECT 
             citydb_objectid,
@@ -126,6 +132,8 @@ def main():
             continue
 
         buildings = {}
+        # First pass to find the lowest altitude (Z) of the tile
+        min_alt = float('inf')
         for line in lines:
             parts = line.split('|', 1)
             if len(parts) < 2:
@@ -136,6 +144,10 @@ def main():
             except json.JSONDecodeError:
                 continue
             
+            # Simple recursive search for lowest Z coordinate to anchor the tile's origin
+            coords_str = str(geom.get("coordinates", []))
+            for p in geom.get("coordinates", []):
+                pass # it's complex to parse recursively like this, just parse during main loop
             if objid not in buildings:
                 buildings[objid] = []
             buildings[objid].append(geom)
@@ -143,6 +155,41 @@ def main():
         scene = trimesh.Scene()
         has_geometry = False
         
+        # Determine exact altitude offset to push building bases to exactly 0 in the GLB origin
+        all_alts = []
+        def extract_alts(arr):
+            for item in arr:
+                if isinstance(item, list):
+                    if len(item) >= 3 and isinstance(item[0], (int, float)):
+                        all_alts.append(item[2])
+                    else:
+                        extract_alts(item)
+
+        for objid, faces in buildings.items():
+            for geom in faces:
+                gtype = geom.get("type", "")
+                coords = geom.get("coordinates", [])
+                
+                polygons = []
+                if gtype == "Polygon":
+                    polygons = [coords]
+                elif gtype == "MultiPolygon":
+                    polygons = coords
+                elif gtype == "GeometryCollection":
+                    for subgeom in geom.get("geometries", []):
+                        if subgeom["type"] == "Polygon":
+                            polygons.append(subgeom["coordinates"])
+                        elif subgeom["type"] == "MultiPolygon":
+                            polygons.extend(subgeom["coordinates"])
+                            
+                for poly in polygons:
+                    extract_alts(poly)
+
+        tile_alt = min(all_alts) if all_alts else 0.0
+        
+        # Now recalculate ECEF parameters using the correct terrain altitude anchor for this specific tile!
+        tax, tay, taz = wgs84_to_ecef.transform(tile_lon, tile_lat, tile_alt)
+
         for objid, faces in buildings.items():
             b_verts = []
             b_faces = []
@@ -177,7 +224,7 @@ def main():
                         for p in pts:
                             lon, lat = p[0], p[1]
                             alt = p[2] if len(p) > 2 else 0.0
-                            e, n, u = to_enu(lon, lat, alt, ax, ay, az, sin_lon, cos_lon, sin_lat, cos_lat)
+                            e, n, u = to_enu(lon, lat, alt, tax, tay, taz, tsin_lon, tcos_lon, tsin_lat, tcos_lat)
                             # Convert ENU (Z-up) to glTF natively expected Y-up coordinate system
                             # X = East, Y = Up, Z = South (-North)
                             verts.append((e, u, -n))
@@ -214,6 +261,40 @@ def main():
             bbox_res = run_query(bbox_query, args)
             if bbox_res:
                 xmin, ymin, xmax, ymax = map(float, bbox_res.split('|'))
+                
+                # Transform matrix to put the Y-up glTF back onto the Z-up ECEF globe exactly at the tile origin!
+                olam = math.radians(tile_lon)
+                ophi = math.radians(tile_lat)
+                sl = math.sin(olam)
+                cl = math.cos(olam)
+                sp = math.sin(ophi)
+                cp = math.cos(ophi)
+                
+                # ENU vector basis inside ECEF 
+                # East
+                e_x = -sl
+                e_y = cl
+                e_z = 0
+                # North
+                n_x = -sp * cl
+                n_y = -sp * sl
+                n_z = cp
+                # Up
+                u_x = cp * cl
+                u_y = cp * sl
+                u_z = sp
+                
+                # glTF is Y-up where X=East, Y=Up, Z=-North (South)
+                # Cesium automatically maps glTF Y-up to local Z-up BEFORE applying transform.
+                # So the local space before transform IS ENU (X=East, Y=North, Z=Up).
+                # Therefore, we just provide the standard ENU to ECEF transform:
+                transform = [
+                    e_x, e_y, e_z, 0,
+                    n_x, n_y, n_z, 0,
+                    u_x, u_y, u_z, 0,
+                    tax, tay, taz, 1
+                ]
+
                 tileset_children.append({
                     "boundingVolume": {
                         "region": [
@@ -223,12 +304,14 @@ def main():
                         ]
                     },
                     "geometricError": 0.0,
+                    "transform": transform,
                     "content": {
                         "uri": glb_name
                     },
                     "extras": {
                         "name": glb_name,
-                        "center": [name_x, name_y]
+                        "center": [name_x, name_y],
+                        "anchor": [tile_lon, tile_lat, tile_alt]
                     }
                 })
             
