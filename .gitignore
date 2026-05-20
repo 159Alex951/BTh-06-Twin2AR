@@ -33,7 +33,7 @@ Geobasiszwilling/geobasiszwilling_fhnw/output/terrain_qm/*
 Geobasiszwilling/geobasiszwilling_fhnw/output/roofs/*
 Geobasiszwilling/geobasiszwilling_fhnw/output/point*
 Geobasiszwilling/geobasiszwilling_fhnw/output/mesh/*
-
+Geobasiszwilling/geobasiszwilling_fhnw/demo/*
 
 
 
@@ -43,6 +43,7 @@ Twin2AR/Analyse/*.geojson
 Twin2AR/Analyse/archive/*.geojson
 Twin2AR/Analyse/Analyse_Alle_Gebaude/*.geojson
 Twin2AR/Analyse/gwr_chunks/*
+
 
 
 
