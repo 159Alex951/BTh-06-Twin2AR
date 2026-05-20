@@ -1,5 +1,5 @@
 Param()
-
+old scrpt
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan
