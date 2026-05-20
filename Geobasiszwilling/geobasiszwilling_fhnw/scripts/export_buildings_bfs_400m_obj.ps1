@@ -1,5 +1,5 @@
 Param()
-
+old script for testing with obj
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan
