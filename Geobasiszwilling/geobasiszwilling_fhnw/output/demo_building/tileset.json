@@ -1,0 +1,23 @@
+{
+  "asset": {
+    "version": "1.1"
+  },
+  "geometricError": 500.0,
+  "root": {
+    "boundingVolume": {
+      "region": [
+        0.13338,
+        0.82962,
+        0.13341,
+        0.82964,
+        275.0,
+        325.0
+      ]
+    },
+    "geometricError": 0.0,
+    "refine": "ADD",
+    "content": {
+      "uri": "Ballenberg.glb"
+    }
+  }
+}
