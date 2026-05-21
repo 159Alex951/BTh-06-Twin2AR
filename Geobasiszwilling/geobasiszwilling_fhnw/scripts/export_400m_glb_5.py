@@ -337,7 +337,7 @@ def main():
         "asset": {"version": "1.0"},
         "geometricError": 500.0,
         "root": {
-            "transform": enu_to_ecef,
+            # "transform": enu_to_ecef, # Removed root transform to avoid double-transformation in Cesium
             "boundingVolume": {
                 "region": [
                     math.radians(5.96), math.radians(45.82),
