@@ -28,9 +28,8 @@
         async function loadBuildingsBfs400mTileset() {
             if (buildingsBfs400mTileset) return buildingsBfs400mTileset;
             
-            // use global baseUrl
-            const baseUrl = `http://${window.LOCAL_IP || window.location.hostname + ':8083'}`;
-            const tilesetUrl = `${baseUrl}/buildings_bfs_400m/tileset.json`;
+            // use local path from nginx output directory
+            const tilesetUrl = `/buildings_bfs_400m_glb_5/tileset.json`;
 
             buildingsBfs400mTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
             
@@ -62,9 +61,8 @@
         async function loadBuildingsProjected400mTileset() {
             if (buildingsProjected400mTileset) return buildingsProjected400mTileset;
             
-            // use global baseUrl
-            const baseUrl = `http://${window.LOCAL_IP || window.location.hostname + ':8083'}`;
-            const tilesetUrl = `${baseUrl}/buildings_projected_400m_glb_2/tileset.json`;
+            // use local path from nginx output directory
+            const tilesetUrl = `/buildings_projected_400m_glb_4/tileset.json`;
 
             buildingsProjected400mTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
             
