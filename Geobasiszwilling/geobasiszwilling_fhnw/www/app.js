@@ -87,6 +87,40 @@
             });
         }
 
+        // Demo Building Tileset
+        let demoBuildingTileset = null;
+        const chkDemoBuilding = document.getElementById('chkDemoBuilding');
+
+        async function loadDemoBuildingTileset() {
+            if (demoBuildingTileset) return demoBuildingTileset;
+            
+            const tilesetUrl = `/demo_building/tileset.json`;
+
+            demoBuildingTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+            
+            demoBuildingTileset.shadows = Cesium.ShadowMode.ENABLED;
+            demoBuildingTileset.maximumScreenSpaceError = 4.0;
+            demoBuildingTileset.dynamicScreenSpaceError = true;
+            
+            window.viewer.scene.primitives.add(demoBuildingTileset);
+            window.demoBuildingTileset = demoBuildingTileset;
+            demoBuildingTileset.show = chkDemoBuilding.checked;
+            return demoBuildingTileset;
+        }
+
+        if (chkDemoBuilding) {
+            chkDemoBuilding.addEventListener('change', async () => {
+                if (chkDemoBuilding.checked) {
+                    await loadDemoBuildingTileset();
+                    if (demoBuildingTileset) {
+                        demoBuildingTileset.show = true;
+                    }
+                } else {
+                    if (demoBuildingTileset) demoBuildingTileset.show = false;
+                }
+            });
+        }
+
         // start new
         let projectedBuildingsDataSource = null;
         const chkProjectedBuildings = document.getElementById('chkProjectedBuildings');
