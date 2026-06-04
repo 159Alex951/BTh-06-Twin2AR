@@ -185,79 +185,6 @@
         .details-row::-webkit-scrollbar { height: 5px; }
         .details-row::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
 
-        /* --- Statistics Overlay ----------------------------------------- */
-        #stats-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-            display: none; align-items: center; justify-content: center; z-index: 4000;
-        }
-        #stats-overlay.show { display: flex; }
-        #stats-panel {
-            width: 95vw; height: 90vh; max-width: 1400px;
-            background: rgba(20,20,20,0.97); color: #f0f0f0;
-            border-radius: 16px; padding: 18px 22px;
-            display: flex; flex-direction: column; gap: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.65);
-        }
-        #stats-panel-header {
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 10px;
-        }
-        #stats-panel-header h2 { margin: 0; font-size: 18px; font-weight: 700; }
-        #stats-panel-controls { display: flex; gap: 8px; align-items: center; }
-        #stats-panel-controls .stats-toggle {
-            background: rgba(255,255,255,0.08); color: #ddd;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
-        }
-        #stats-panel-controls .stats-toggle.active {
-            background: #3498db; color: #fff; border-color: #3498db;
-        }
-        #stats-close-btn {
-            background: transparent; color: #fff; border: none;
-            font-size: 22px; cursor: pointer; padding: 0 6px;
-        }
-        #stats-panel-body { flex: 1; overflow: auto; padding-right: 6px; }
-        #stats-summary {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px; margin-bottom: 14px;
-        }
-        .stats-summary-card {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 8px 12px; border: 1px solid rgba(255,255,255,0.08);
-        }
-        .stats-summary-card .lbl { font-size: 11px; color: #aaa; letter-spacing: 0.04em; text-transform: uppercase; }
-        .stats-summary-card .val { font-size: 17px; font-weight: 700; color: #fff; }
-        #stats-charts {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-            gap: 14px; margin-bottom: 16px;
-        }
-        .stats-chart-card {
-            background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px;
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-        .stats-chart-card h3 {
-            margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #ddd;
-        }
-        .stats-chart-card canvas { max-height: 240px; width: 100% !important; }
-        #stats-table-wrapper {
-            background: rgba(255,255,255,0.04); border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.08); overflow: auto;
-        }
-        #stats-table { border-collapse: collapse; width: 100%; font-size: 12px; }
-        #stats-table th, #stats-table td {
-            padding: 5px 8px; text-align: right; white-space: nowrap;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        #stats-table th {
-            text-align: right; position: sticky; top: 0;
-            background: rgba(40,40,40,0.95); color: #ddd; font-weight: 600;
-        }
-        #stats-table th:first-child, #stats-table td:first-child { text-align: left; }
-        #stats-table tr:hover td { background: rgba(255,255,255,0.04); }
-        #stats-empty { color: #ccc; text-align: center; padding: 40px; font-size: 14px; }
-        /* Pull the new Stats buttons right next to Show Details, matching its pill style. */
-        #btn-stats-mobile { position: absolute; bottom: 60px; z-index: 3001; transform: translateX(140px); }
-
         /* --- RESPONSIVE DEVICE TOGGLES & DESKTOP SCALING --- */
         
         /* Hide Desktop Elements on Mobile */
@@ -320,19 +247,18 @@
 
 <!-- Map Legend -->
 <div id="map-legend">
-    <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div>Raw GPS + Compass</div>
+    <div class="legend-item"><div class="legend-color" style="background: #e74c3c;"></div>Root</div>
+    <div class="legend-item"><div class="legend-color" style="background: #3498db;"></div>Raw GPS</div>
     <div class="legend-item"><div class="legend-color" style="background: #2ecc71;"></div>VPS</div>
     <div class="legend-item"><div class="legend-color" style="background: #f39c12; border-radius: 2px;"></div>Tile</div>
     <div class="legend-item"><div class="legend-color" style="background: #f1c40f; border-radius: 2px;"></div>Ref Bldg</div>
     <div class="legend-item"><div class="legend-color" style="background: #e056fd; border-radius: 2px;"></div>SB_DZ</div>
-    <div class="legend-item"><div class="legend-color" style="background: #1abc9c; border-radius: 2px;"></div>Snap</div>
 </div>
 
 <!-- Controls (Bottom Left) -->
 <div id="controls">
     <button class="btn" onclick="togglePanel()">Select Pose</button>
     <button id="btn-details-desktop" class="btn-details" onclick="toggleDetailsDesktop(event)">Show Details</button>
-    <button id="btn-stats-desktop" class="btn-details" onclick="openStatsOverlay()">Statistics</button>
 </div>
 
 <!-- Desktop ONLY Details Panel -->
@@ -360,54 +286,11 @@
     <img id="expanded-image" alt="Expanded View">
     <div id="expanded-info-mobile" class="expanded-info" onclick="event.stopPropagation()"></div>
     <button id="btn-details-mobile" class="btn-details" onclick="toggleDetailsMobile(event)">Show Details</button>
-    <button id="btn-stats-mobile" class="btn-details" onclick="event.stopPropagation(); openStatsOverlay()">Statistics</button>
-</div>
-
-<!-- Statistics Overlay -->
-<div id="stats-overlay" onclick="if(event.target===this) closeStatsOverlay()">
-    <div id="stats-panel">
-        <div id="stats-panel-header">
-            <h2>Raw GPS + Compass vs. VPS Statistics</h2>
-            <div id="stats-panel-controls">
-                <button class="stats-toggle active" id="stats-range-all"   onclick="setStatsRange('all')">All</button>
-                <button class="stats-toggle"        id="stats-range-20"    onclick="setStatsRange('last20')">Last 20</button>
-                <button id="stats-close-btn" onclick="closeStatsOverlay()">✕</button>
-            </div>
-        </div>
-        <div id="stats-panel-body">
-            <div id="stats-summary"></div>
-            <div id="stats-charts">
-                <div class="stats-chart-card"><h3>1. Heading Δ (compass − VPS) over wall time</h3><canvas id="chart-heading-vs-time"></canvas></div>
-                <div class="stats-chart-card"><h3>2. Raw ↔ VPS distance over wall time</h3><canvas id="chart-distance-vs-time"></canvas></div>
-                <div class="stats-chart-card"><h3>3. Heading Δ vs. app runtime</h3><canvas id="chart-heading-vs-runtime"></canvas></div>
-                <div class="stats-chart-card"><h3>4. Raw ↔ VPS distance vs. app runtime</h3><canvas id="chart-distance-vs-runtime"></canvas></div>
-                <div class="stats-chart-card"><h3>5. Raw ↔ VPS distance vs. VPS horizontal accuracy</h3><canvas id="chart-distance-vs-vpshacc"></canvas></div>
-            </div>
-            <div id="stats-table-wrapper">
-                <table id="stats-table"><thead><tr>
-                    <th>File</th>
-                    <th>Wall time (UTC)</th>
-                    <th>Runtime (s)</th>
-                    <th>Raw Lat, Lon</th>
-                    <th>VPS Lat, Lon</th>
-                    <th>Dist (m)</th>
-                    <th>Mag Hd</th>
-                    <th>VPS Hd</th>
-                    <th>Δ Hd</th>
-                    <th>VPS HAcc</th>
-                    <th>VPS HdAcc</th>
-                </tr></thead><tbody></tbody></table>
-                <div id="stats-empty" style="display:none">No saved poses with the new schema yet. Send a pose from the Unity app and refresh.</div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Leaflet & MarkerCluster JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<!-- Chart.js for the Statistics overlay (single UMD bundle, no build step). -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
     const cartoDb = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 22, maxNativeZoom: 19, attribution: '© OpenStreetMap © CARTO' });
@@ -617,19 +500,23 @@
     }
 
     function buildDetailHtml(data) {
-      // Root pose intentionally removed: data.latitude/longitude/heading are
-      // identical to data.vps.* so showing both was confusing duplication.
+      const rootSection = makeSection('Root Pose', [
+        { label: 'Lat', value: fmt(data.latitude, 6) },
+        { label: 'Lon', value: fmt(data.longitude, 6) },
+        { label: 'Alt', value: fmt(data.altitude, 2) + 'm' },
+        { label: 'Heading', value: fmt(data.heading, 1) + '°' },
+        { label: 'Pitch', value: fmt(data.pitch, 1) + '°' },
+        { label: 'Roll', value: fmt(data.roll, 1) + '°' },
+      ], '#e74c3c');
+
       const rawGPS = data.rawGPS || {};
-      const compassHdg = (rawGPS.magneticHeading !== undefined && rawGPS.magneticHeading !== 0)
-        ? rawGPS.magneticHeading : rawGPS.heading;
-      const rawGpsSection = makeSection('Raw GPS + Compass', [
+      const rawGpsSection = makeSection('Raw GPS', [
         { label: 'Lat', value: fmt(rawGPS.latitude, 6) },
         { label: 'Lon', value: fmt(rawGPS.longitude, 6) },
         { label: 'Alt', value: rawGPS.altitude !== undefined ? fmt(rawGPS.altitude, 2) + 'm' : undefined },
         { label: 'H Acc', value: rawGPS.horizontalAccuracy !== undefined ? fmt(rawGPS.horizontalAccuracy, 2) + 'm' : undefined },
         { label: 'V Acc', value: rawGPS.verticalAccuracy !== undefined ? fmt(rawGPS.verticalAccuracy, 2) + 'm' : undefined },
-        { label: 'Mag Hd', value: rawGPS.magneticHeading !== undefined ? fmt(rawGPS.magneticHeading, 1) + '°' : undefined },
-        { label: 'True Hd', value: rawGPS.heading !== undefined ? fmt(rawGPS.heading, 1) + '°' : undefined },
+        { label: 'Head', value: rawGPS.heading !== undefined ? fmt(rawGPS.heading, 1) + '°' : undefined },
         { label: 'Hd Acc', value: rawGPS.headingAccuracy !== undefined ? fmt(rawGPS.headingAccuracy, 1) + '°' : undefined }
       ], '#3498db');
 
@@ -712,58 +599,11 @@
         { label: 'H Offset', value: fmt(rt.heightOffset, 2) + 'm' }
       ], '#f39c12') : '';
 
-      // --- ATOMIC SNAP SECTION ---
-      // Snapshot of VPS + back-computed Cesium session origin at the instant
-      // the staged alignment fired. This is the one moment that locks the
-      // world's position for the rest of the session.
-      // Wrapped in try/catch so a missing/malformed atomicSnap field can never
-      // take down the entire details panel — previously this caused the whole
-      // "Show Details" overlay to render blank.
-      let snapSection = '';
-      try {
-          const snap = data.atomicSnap || {};
-          if (snap.hasSnap) {
-              const snapDistance = (data.vps && data.vps.latitude && snap.vpsLat)
-                  ? haversineMeters(snap.vpsLat, snap.vpsLon, data.vps.latitude, data.vps.longitude)
-                  : null;
-              snapSection = makeSection('Atomic Snap', [
-                { label: 'Snap Lat',     value: fmt(snap.vpsLat, 6) },
-                { label: 'Snap Lon',     value: fmt(snap.vpsLon, 6) },
-                { label: 'Snap Hdg',     value: fmt(snap.vpsHeading, 1) + '°' },
-                { label: 'Snap H Acc',   value: fmt(snap.vpsHorizontalAccuracy, 2) + 'm' },
-                { label: 'Snap Hd Acc',  value: fmt(snap.vpsHeadingAccuracy, 1) + '°' },
-                { label: 'Origin Lat',   value: fmt(snap.originLat, 6) },
-                { label: 'Origin Lon',   value: fmt(snap.originLon, 6) },
-                { label: 'Origin H',     value: fmt(snap.originHeight, 2) + 'm' },
-                { label: 'LN02 In',      value: fmt(snap.ln02HeightInput, 2) + 'm' },
-                { label: 'Cam Off',      value: `${fmt(snap.cameraOffsetX,2)}, ${fmt(snap.cameraOffsetY,2)}, ${fmt(snap.cameraOffsetZ,2)}` },
-                { label: 'H.Corr',       value: fmt(snap.headingCorrectionApplied, 1) + '°' },
-                { label: 'Drift→VPS',    value: snapDistance !== null ? fmt(snapDistance, 2) + 'm' : '-' }
-              ], '#1abc9c');
-          }
-      } catch (e) {
-          console.error('atomicSnap render failed:', e);
-          snapSection = '';
-      }
-
       return `
-        <div class="details-row top-row"><div class="details-wrapper">${rawGpsSection} ${vpsSection} ${snapSection}</div></div>
+        <div class="details-row top-row"><div class="details-wrapper">${rootSection} ${rawGpsSection} ${vpsSection}</div></div>
         <div class="details-row top-row"><div class="details-wrapper">${correctionsSection}</div></div>
         <div class="details-row"><div class="details-wrapper">${osmSection} ${unityRigSection} ${sbdzSection} ${remoteTileSection}</div></div>
       `;
-    }
-
-    // Great-circle distance in metres between two WGS84 points.
-    // Used to show how far the screenshot-time VPS pose has drifted from the
-    // atomic snap pose that locked the world's origin.
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-        const R = 6371000;
-        const toRad = d => d * Math.PI / 180;
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat/2)**2 +
-                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-        return 2 * R * Math.asin(Math.sqrt(a));
     }
 
     // Tile rectangle layer (cleared & redrawn on each load)
@@ -859,57 +699,9 @@
 
             markerCluster.clearLayers();
 
-            // Root arrow intentionally disabled: data.latitude/longitude/heading
-            // are identical to data.vps.* so the red Root arrow was stacked on
-            // top of the green VPS arrow at the same coordinate.
-            if (data.rawGPS) {
-                // Blue raw-GNSS arrow now follows the magnetic compass (Input.compass.magneticHeading)
-                // so the on-map blue arrow reflects where the phone actually points,
-                // not the synthetic 0° from when the compass wasn't enabled.
-                const compassHdg = (data.rawGPS.magneticHeading !== undefined && data.rawGPS.magneticHeading !== 0)
-                    ? data.rawGPS.magneticHeading : data.rawGPS.heading;
-                addArrow(data.rawGPS.latitude, data.rawGPS.longitude, compassHdg, '#3498db', 200);
-            }
+            addArrow(data.latitude, data.longitude, data.heading, '#e74c3c', 300);
+            if (data.rawGPS) addArrow(data.rawGPS.latitude, data.rawGPS.longitude, data.rawGPS.heading, '#3498db', 200);
             if (data.vps) addArrow(data.vps.latitude, data.vps.longitude, data.vps.heading, '#2ecc71', 100);
-
-            // ── Atomic Snap markers ──────────────────────────────────────────
-            // Show the snap-time VPS pose (teal arrow) and the back-computed
-            // Cesium session origin (teal square) as their own markers, so a
-            // visible gap between the snap pose and the current screenshot VPS
-            // pose means the world has drifted since the alignment locked.
-            const snap = data.atomicSnap;
-            if (snap && snap.hasSnap) {
-                addArrow(snap.vpsLat, snap.vpsLon, snap.vpsHeading, '#1abc9c', 250);
-
-                if (snap.originLat && snap.originLon) {
-                    const originIcon = L.divIcon({
-                        html: `<div style="background:#1abc9c;border:2px solid #0d6e5d;
-                                    width:12px;height:12px;border-radius:2px;
-                                    box-shadow:0 0 6px rgba(26,188,156,0.9);"></div>`,
-                        className: '', iconSize: [12, 12], iconAnchor: [6, 6]
-                    });
-                    const originMarker = L.marker([snap.originLat, snap.originLon],
-                        { icon: originIcon, zIndexOffset: 450 });
-                    originMarker.bindTooltip(
-                        `<b>Atomic Snap — Cesium Origin</b><br>` +
-                        `Lat: ${fmt(snap.originLat, 6)}<br>` +
-                        `Lon: ${fmt(snap.originLon, 6)}<br>` +
-                        `H: ${fmt(snap.originHeight, 2)}m<br>` +
-                        `Hdg correction: ${fmt(snap.headingCorrectionApplied, 1)}°`,
-                        { sticky: true }
-                    );
-                    markerCluster.addLayer(originMarker);
-
-                    // Dashed line from snap origin to snap-time VPS pose:
-                    // length equals the camera offset projected on the ground.
-                    if (snap.vpsLat && snap.vpsLon) {
-                        L.polyline(
-                            [[snap.originLat, snap.originLon], [snap.vpsLat, snap.vpsLon]],
-                            { color: '#1abc9c', weight: 2, dashArray: '4 4', opacity: 0.8 }
-                        ).addTo(map).bindTooltip('Snap origin → snap-time VPS', { sticky: true });
-                    }
-                }
-            }
 
             // Draw SB_DZ applied georeference position
             if (data.sbdz && data.sbdz.appliedLat && data.sbdz.appliedLon) {
@@ -1058,239 +850,6 @@
 
     fetchLocations();
     setInterval(fetchLocations, 5000);
-
-    /* =====================================================================
-       Statistics overlay
-       Renders a scrollable comparison of every saved pose so we can see how
-       far the raw-GNSS + magnetic-compass fix drifts from the Geospatial VPS
-       fix over time and over an AR-session lifetime. The five charts answer
-       five separate questions and are switchable between "all" and "last 20".
-       ===================================================================== */
-    let statsRange     = 'all';       // 'all' | 'last20'
-    let statsRowsCache = null;        // last /api/stats result
-    const statsCharts  = {};          // id -> Chart instance
-
-    async function openStatsOverlay() {
-        document.getElementById('stats-overlay').classList.add('show');
-        await loadAndRenderStats();
-    }
-    function closeStatsOverlay() {
-        document.getElementById('stats-overlay').classList.remove('show');
-    }
-    function setStatsRange(r) {
-        statsRange = r;
-        document.getElementById('stats-range-all').classList.toggle('active', r === 'all');
-        document.getElementById('stats-range-20').classList.toggle('active',  r === 'last20');
-        if (statsRowsCache) renderStats(statsRowsCache);
-    }
-
-    async function loadAndRenderStats() {
-        try {
-            const res = await fetch('/api/stats', { cache: 'no-store' });
-            const rows = await res.json();
-            statsRowsCache = Array.isArray(rows) ? rows : [];
-            renderStats(statsRowsCache);
-        } catch (err) {
-            console.error('Failed to load /api/stats:', err);
-            document.querySelector('#stats-table tbody').innerHTML = '';
-            document.getElementById('stats-empty').style.display = 'block';
-            document.getElementById('stats-empty').textContent = 'Could not load statistics endpoint.';
-        }
-    }
-
-    function renderStats(allRows) {
-        // Only rows with the new schema fields are plottable. We still show
-        // older rows in the table (greyed-out) for completeness.
-        const usable = allRows.filter(r =>
-            r.wallClockUnixMs && r.rawLat != null && r.vpsLat != null &&
-            r.headingDeltaDeg != null && r.rawVsVpsDistanceM != null);
-        const subset = (statsRange === 'last20')
-            ? usable.slice(Math.max(0, usable.length - 20))
-            : usable;
-
-        renderStatsSummary(subset);
-        renderStatsTable(allRows);
-        drawStatsCharts(subset);
-
-        const empty = document.getElementById('stats-empty');
-        empty.style.display = (allRows.length === 0) ? 'block' : 'none';
-    }
-
-    function renderStatsSummary(rows) {
-        const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-        const dists = rows.map(r => r.rawVsVpsDistanceM).filter(v => v != null);
-        const hdgs  = rows.map(r => Math.abs(r.headingDeltaDeg)).filter(v => v != null);
-        const vpsH  = rows.map(r => r.vpsHorizontalAccuracy).filter(v => v != null);
-        const f = (v, d = 2) => (v == null ? '–' : Number(v).toFixed(d));
-        const cards = [
-            { lbl: 'Samples',              val: rows.length },
-            { lbl: 'Mean |\u0394Hd|',      val: f(mean(hdgs), 1) + '°' },
-            { lbl: 'Mean Raw\u2194VPS',   val: f(mean(dists), 2) + ' m' },
-            { lbl: 'Max Raw\u2194VPS',    val: f(Math.max(...dists, -Infinity), 2) + ' m' },
-            { lbl: 'Mean VPS HAcc',        val: f(mean(vpsH), 2) + ' m' },
-        ];
-        document.getElementById('stats-summary').innerHTML = cards.map(c =>
-            `<div class="stats-summary-card"><div class="lbl">${c.lbl}</div><div class="val">${c.val}</div></div>`
-        ).join('');
-    }
-
-    function renderStatsTable(rows) {
-        const tbody = document.querySelector('#stats-table tbody');
-        const f = (v, d = 2) => (v == null ? '–' : Number(v).toFixed(d));
-        tbody.innerHTML = rows.map(r => {
-            const wall = r.wallClockUnixMs
-                ? new Date(r.wallClockUnixMs).toISOString().replace('T', ' ').replace('Z', '')
-                : '–';
-            const ll = (lat, lon) => (lat == null || lon == null)
-                ? '–'
-                : `${Number(lat).toFixed(5)}, ${Number(lon).toFixed(5)}`;
-            return `<tr>
-                <td>${r.filename}</td>
-                <td>${wall}</td>
-                <td>${f(r.appRuntimeSeconds, 1)}</td>
-                <td>${ll(r.rawLat, r.rawLon)}</td>
-                <td>${ll(r.vpsLat, r.vpsLon)}</td>
-                <td>${f(r.rawVsVpsDistanceM, 2)}</td>
-                <td>${f(r.rawMagneticHeading, 1)}°</td>
-                <td>${f(r.vpsHeading, 1)}°</td>
-                <td>${f(r.headingDeltaDeg, 1)}°</td>
-                <td>${f(r.vpsHorizontalAccuracy, 2)}</td>
-                <td>${f(r.vpsHeadingAccuracy, 1)}°</td>
-            </tr>`;
-        }).join('');
-    }
-
-    function _makeOrReplace(id, config) {
-        if (statsCharts[id]) {
-            statsCharts[id].destroy();
-            delete statsCharts[id];
-        }
-        const ctx = document.getElementById(id);
-        if (!ctx || typeof Chart === 'undefined') return;
-        statsCharts[id] = new Chart(ctx, config);
-    }
-
-    function drawStatsCharts(rows) {
-        if (typeof Chart === 'undefined') {
-            console.warn('Chart.js not loaded; skipping charts.');
-            return;
-        }
-        // X-axis variants
-        const timeLabels = rows.map(r => new Date(r.wallClockUnixMs).toISOString().slice(11, 19));
-        const runtimes   = rows.map(r => r.appRuntimeSeconds);
-        const hdgDelta   = rows.map(r => r.headingDeltaDeg);
-        const dist       = rows.map(r => r.rawVsVpsDistanceM);
-        const vpsHAcc    = rows.map(r => r.vpsHorizontalAccuracy);
-
-        const lineCommon = {
-            type: 'line',
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#ddd' } } },
-                scales: {
-                    x: { ticks: { color: '#bbb', maxRotation: 0, autoSkip: true } },
-                    y: { ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.08)' } }
-                }
-            }
-        };
-        const scatterCommon = {
-            type: 'scatter',
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#ddd' } } },
-                scales: {
-                    x: { ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.08)' }, title: { display: true, color: '#999' } },
-                    y: { ticks: { color: '#bbb' }, grid: { color: 'rgba(255,255,255,0.08)' }, title: { display: true, color: '#999' } }
-                }
-            }
-        };
-
-        // 1. heading delta over wall-clock time (line)
-        _makeOrReplace('chart-heading-vs-time', {
-            ...lineCommon,
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: '\u0394 Heading (compass \u2212 VPS) [\u00b0]',
-                    data: hdgDelta, borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.25)',
-                    tension: 0.25, pointRadius: 3
-                }]
-            }
-        });
-
-        // 2. raw-vs-VPS distance over wall-clock time (line)
-        _makeOrReplace('chart-distance-vs-time', {
-            ...lineCommon,
-            data: {
-                labels: timeLabels,
-                datasets: [{
-                    label: 'Raw \u2194 VPS distance [m]',
-                    data: dist, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.25)',
-                    tension: 0.25, pointRadius: 3
-                }]
-            }
-        });
-
-        // 3. heading delta vs app runtime (scatter)
-        _makeOrReplace('chart-heading-vs-runtime', {
-            ...scatterCommon,
-            data: {
-                datasets: [{
-                    label: '\u0394 Heading vs runtime',
-                    data: rows.map(r => ({ x: r.appRuntimeSeconds, y: r.headingDeltaDeg })),
-                    backgroundColor: '#3498db', pointRadius: 4
-                }]
-            },
-            options: {
-                ...scatterCommon.options,
-                scales: {
-                    ...scatterCommon.options.scales,
-                    x: { ...scatterCommon.options.scales.x, title: { display: true, text: 'App runtime [s]', color: '#999' } },
-                    y: { ...scatterCommon.options.scales.y, title: { display: true, text: '\u0394 Heading [\u00b0]',   color: '#999' } }
-                }
-            }
-        });
-
-        // 4. distance vs app runtime (scatter)
-        _makeOrReplace('chart-distance-vs-runtime', {
-            ...scatterCommon,
-            data: {
-                datasets: [{
-                    label: 'Distance vs runtime',
-                    data: rows.map(r => ({ x: r.appRuntimeSeconds, y: r.rawVsVpsDistanceM })),
-                    backgroundColor: '#e74c3c', pointRadius: 4
-                }]
-            },
-            options: {
-                ...scatterCommon.options,
-                scales: {
-                    ...scatterCommon.options.scales,
-                    x: { ...scatterCommon.options.scales.x, title: { display: true, text: 'App runtime [s]', color: '#999' } },
-                    y: { ...scatterCommon.options.scales.y, title: { display: true, text: 'Distance [m]',     color: '#999' } }
-                }
-            }
-        });
-
-        // 5. distance vs VPS horizontal accuracy (scatter)
-        _makeOrReplace('chart-distance-vs-vpshacc', {
-            ...scatterCommon,
-            data: {
-                datasets: [{
-                    label: 'Distance vs VPS HAcc',
-                    data: rows.map(r => ({ x: r.vpsHorizontalAccuracy, y: r.rawVsVpsDistanceM })),
-                    backgroundColor: '#2ecc71', pointRadius: 4
-                }]
-            },
-            options: {
-                ...scatterCommon.options,
-                scales: {
-                    ...scatterCommon.options.scales,
-                    x: { ...scatterCommon.options.scales.x, title: { display: true, text: 'VPS horizontal accuracy [m]', color: '#999' } },
-                    y: { ...scatterCommon.options.scales.y, title: { display: true, text: 'Raw \u2194 VPS distance [m]',  color: '#999' } }
-                }
-            }
-        });
-    }
 </script>
 </body>
 </html>
