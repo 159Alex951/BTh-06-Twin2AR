@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -123,6 +123,12 @@ async def select_location(request: Request):
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.get("/demo")
+async def download_apk():
+    apk_path = os.path.join(BASE_DIR, "Twin2AR_demo.apk")
+    return FileResponse(apk_path, media_type="application/vnd.android.package-archive", filename="Twin2AR_demo.apk")
+
 
 @app.get("/map", response_class=HTMLResponse)
 async def serve_map():
