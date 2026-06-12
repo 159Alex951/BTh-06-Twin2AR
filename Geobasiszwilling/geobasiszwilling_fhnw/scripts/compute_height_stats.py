@@ -51,13 +51,13 @@ def process_waterfall_height(props):
 
     if final_h is None:
         if gkat == '1060':
-            final_h = 10.0
+            final_h = 9.0
             source = 'category_fallback_1060'
         elif gkat == '1080':
             final_h = 0.0
             source = 'ignore' 
         else:
-            final_h = 6.0
+            final_h = 7.5
             source = 'absolute_fallback'
 
     if gkat == '1080':

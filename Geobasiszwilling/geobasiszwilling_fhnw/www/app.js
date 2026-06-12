@@ -1,26 +1,57 @@
-// Swisstopo Buildings 3D Tileset
-        let buildingsSwisstopoTileset = null;
-        const chkBuildingsSwisstopo = document.getElementById('chkBuildingsSwisstopo');
-        async function loadBuildingsSwisstopoTileset() {
-          if (buildingsSwisstopoTileset) return buildingsSwisstopoTileset;
-          const tilesetUrl = 'https://3d.geo.admin.ch/ch.swisstopo.swissbuildings3d.3d/v1/tileset.json';
-          buildingsSwisstopoTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
-          window.viewer.scene.primitives.add(buildingsSwisstopoTileset);
-          window.buildingsSwisstopoTileset = buildingsSwisstopoTileset;
-          buildingsSwisstopoTileset.show = chkBuildingsSwisstopo.checked;
-          return buildingsSwisstopoTileset;
-        }
-        if (chkBuildingsSwisstopo) {
-          chkBuildingsSwisstopo.addEventListener('change', async () => {
-            if (chkBuildingsSwisstopo.checked) {
-              await loadBuildingsSwisstopoTileset();
-              if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = true;
-            } else {
-              if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = false;
-            }
-          });
-        }
+// // Swisstopo Buildings 3D Tileset
+//         let buildingsSwisstopoTileset = null;
+//         const chkBuildingsSwisstopo = document.getElementById('chkBuildingsSwisstopo');
+//         async function loadBuildingsSwisstopoTileset() {
+//           if (buildingsSwisstopoTileset) return buildingsSwisstopoTileset;
+//           const tilesetUrl = 'https://3d.geo.admin.ch/ch.swisstopo.swissbuildings3d.3d/v1/tileset.json';
+//           buildingsSwisstopoTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+//           window.viewer.scene.primitives.add(buildingsSwisstopoTileset);
+//           window.buildingsSwisstopoTileset = buildingsSwisstopoTileset;
+//           buildingsSwisstopoTileset.show = chkBuildingsSwisstopo.checked;
+//           return buildingsSwisstopoTileset;
+//         }
+//         if (chkBuildingsSwisstopo) {
+//           chkBuildingsSwisstopo.addEventListener('change', async () => {
+//             if (chkBuildingsSwisstopo.checked) {
+//               await loadBuildingsSwisstopoTileset();
+//               if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = true;
+//             } else {
+//               if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = false;
+//             }
+//           });
+//         }
 
+// Swisstopo Buildings 3D Tileset
+let buildingsSwisstopoTileset = null;
+const chkBuildingsSwisstopo = document.getElementById('chkBuildingsSwisstopo');
+
+async function loadBuildingsSwisstopoTileset() {
+  if (buildingsSwisstopoTileset) return buildingsSwisstopoTileset;
+
+  const tilesetUrl = 'https://3d.geo.admin.ch/ch.swisstopo.swissbuildings3d.3d/v1/tileset.json';
+  buildingsSwisstopoTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+
+  // Semi‑transparent light grey buildings
+  buildingsSwisstopoTileset.style = new Cesium.Cesium3DTileStyle({
+    color: "rgba(220, 220, 220, 0.4)"   // r, g, b, alpha -> alpha = 0.4 = 40% opaque
+  });
+
+  window.viewer.scene.primitives.add(buildingsSwisstopoTileset);
+  window.buildingsSwisstopoTileset = buildingsSwisstopoTileset;
+  buildingsSwisstopoTileset.show = chkBuildingsSwisstopo.checked;
+  return buildingsSwisstopoTileset;
+}
+
+if (chkBuildingsSwisstopo) {
+  chkBuildingsSwisstopo.addEventListener('change', async () => {
+    if (chkBuildingsSwisstopo.checked) {
+      await loadBuildingsSwisstopoTileset();
+      if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = true;
+    } else {
+      if (buildingsSwisstopoTileset) buildingsSwisstopoTileset.show = false;
+    }
+  });
+}
         // Buildings BFS 400m Tileset
         let buildingsBfs400mTileset = null;
         const chkBuildingsBfs400m = document.getElementById('chkBuildingsBFS400m');
@@ -65,6 +96,10 @@
             const tilesetUrl = `/buildings_projected_400m_glb_4/tileset.json`;
 
             buildingsProjected400mTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+
+            buildingsProjected400mTileset.style = new Cesium.Cesium3DTileStyle({
+                color: "color('ORANGE', 0.6)"
+            });
             
             buildingsProjected400mTileset.shadows = Cesium.ShadowMode.ENABLED;
             buildingsProjected400mTileset.maximumScreenSpaceError = 4.0;
@@ -97,8 +132,18 @@
             const tilesetUrl = `/demo_building/tileset.json`;
 
             demoBuildingTileset = await Cesium.Cesium3DTileset.fromUrl(tilesetUrl);
+
+            demoBuildingTileset.style = new Cesium.Cesium3DTileStyle({
+              color: "rgb(255.0, 171.0, 0.0)"
+            });
+
+            demoBuildingTileset.backFaceCulling = true;    // show backfaces even if normals are wrong
+            demoBuildingTileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.REPLACE;
+            demoBuildingTileset.colorBlendAmount = 0.5;
+
             
-            demoBuildingTileset.shadows = Cesium.ShadowMode.ENABLED;
+            demoBuildingTileset.shadows = Cesium.ShadowMode.DISABLED;
+            demoBuildingTileset.luminanceAtZenith = 1.2; // brighten overall, try 1.2–2.0
             demoBuildingTileset.maximumScreenSpaceError = 4.0;
             demoBuildingTileset.dynamicScreenSpaceError = true;
             
