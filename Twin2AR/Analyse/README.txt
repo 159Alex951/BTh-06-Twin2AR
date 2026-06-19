@@ -1,1 +1,0 @@
-Alte Daten und Skripte welche für die Analyse der EGID Daten verwendet wurden

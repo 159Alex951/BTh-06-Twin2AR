@@ -18,6 +18,10 @@ PowerShell-Automation für Datenimport, Verarbeitung und Exporte. Alle Skripte s
 - `export_buildings_bfs.ps1` – Export Buildings + BFS als 3D Tiles (tileset.json)
 - `convert_fixpunkte_lv95_to_wgs84.ps1` – Fixpunkte CSV: LV95 → WGS84
 
+- `export_400m_glb_5.py` – Export Buildings + BFS als 400 Meter 3D Tiles (tileset.json)
+- `export_projected_400m_glb_4.py` – Export projected Buildings + BFS als 400 Meter 3D Tiles (tileset.json)
+- `combined_projected_pipeline.py` – Bezug projektierte Gebäude per WFS -> Anreicherung BFS-Daten -> Berechung Gebäudehöhe -> Berechung der Meereshöhe ->  
+
 ## Gemeinsame Voraussetzungen
 
 - Docker Desktop läuft
