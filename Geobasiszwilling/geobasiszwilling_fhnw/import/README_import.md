@@ -14,6 +14,7 @@ Eingangsdaten für alle Pipelines (Terrain, Pointcloud, Buildings/DB, GeoServer)
 - `building/` – Buildings/DB-Workflow (CityGML + SQL)
 - `geoserver/` – Listen/Inputs für Orthophoto-Downloads (VRT/WMS)
 - `mesh/`, `point/`, `pointcloud/`, `terrain/` – weitere, optionale Inputs je Workflow
+- `proj/` - projektierte Gebäude als .geojson und .gpkg
 
 ## Terrain (Höhendaten)
 
@@ -57,6 +58,8 @@ Dieser Workflow basiert auf 3DCityDB/PostGIS (`citydb_pg`) und verbindet CityGML
 - SQL:
   - `01_create_bfs_table.sql`
   - `02_create_view_gebaeude_erweitert.sql`
+  - `03_create_grid.sql`
+
   - `Löschen_ausserhalb_bereich.sql` (Cleanup per Bounding Box)
 
 ### Typischer Ablauf

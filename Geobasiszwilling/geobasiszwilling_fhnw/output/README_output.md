@@ -15,6 +15,8 @@ Generierte Daten (Terrain/3D Tiles/Pointclouds/Exports). Dieser Ordner wird vom 
 - `roofs/` – 3D Tiles (Dächer)
 - `pointcloud/` – 3D Tiles (Punktwolken; low/high)
 - Unterstrich-Ordner wie `_terrain_qm/`, `_buildings/` – Zwischenstände/Backups (optional)
+- `buildings_bfs_400m_glb_5/` – 3D Tiles mit 400 * 400 Meter Aufloesung (Gebäude inkl. BFS-Attribute)
+- `buildings_projected_400m_glb_4/` – 3D Tiles mit 400 * 400 Meter Aufloesung (projektierte Gebäude)
 
 ## Wichtige URLs (bei laufendem NGINX)
 

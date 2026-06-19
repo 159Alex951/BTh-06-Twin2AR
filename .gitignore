@@ -1,17 +1,4 @@
 # Files über 100 MB
-# Geobasiszwilling/geobasiszwilling_fhnw/geoserver_data/_data/ortho_FHNW_5cm/2020_FHNW_ortho_5cm.tif
-# Geobasiszwilling/geobasiszwilling_fhnw/import/building/swissBUILDINGS3D_3-0_1067-21.gml
-# Geobasiszwilling/geobasiszwilling_fhnw/import/building/swissBUILDINGS3D_3-0_1067-22.gml
-# Geobasiszwilling/geobasiszwilling_fhnw/import/mesh/CMU_Mesh_2020.obj
-# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2614_1264.las
-# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2614_1265.las
-# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2615_1264.las
-# Geobasiszwilling/geobasiszwilling_fhnw/import/pointcloud/2615_1265.las
-# Geobasiszwilling/geobasiszwilling_fhnw/output/pointcloud/swisstopo_high/content.pnts
-# Geobasiszwilling/geobasiszwilling_fhnw/pgdata/base/5/149517
-
-# Geobasiszwilling/geobasiszwilling_fhnw/*
-
 Geobasiszwilling/geobasiszwilling_fhnw/geoserver_data/*
 Geobasiszwilling/geobasiszwilling_fhnw/import/building/*
 Geobasiszwilling/geobasiszwilling_fhnw/import/geoserver/*
@@ -23,8 +10,6 @@ Geobasiszwilling/geobasiszwilling_fhnw/pgdata/*
 Geobasiszwilling/geobasiszwilling_fhnw/nginx/*
 Geobasiszwilling/geobasiszwilling_fhnw/.obsidian/*
 Geobasiszwilling/geobasiszwilling_fhnw/.vscode/*
-
-
 Geobasiszwilling/geobasiszwilling_fhnw/output/buildings/*
 Geobasiszwilling/geobasiszwilling_fhnw/output/buildings_bfs/*
 Geobasiszwilling/geobasiszwilling_fhnw/output/buildings_bfs_400m/*
@@ -35,38 +20,16 @@ Geobasiszwilling/geobasiszwilling_fhnw/output/point*
 Geobasiszwilling/geobasiszwilling_fhnw/output/mesh/*
 Geobasiszwilling/geobasiszwilling_fhnw/demo/*
 
-
-
-
-
 Twin2AR/Analyse/*.geojson
 Twin2AR/Analyse/archive/*.geojson
 Twin2AR/Analyse/Analyse_Alle_Gebaude/*.geojson
+Twin2AR/Analyse/Analyse_projektierte_Gebaeude/*.geojson
 Twin2AR/Analyse/gwr_chunks/*
 Twin2AR/Analyse/Analyse_Alle_Gebaude/ch/
 Twin2AR/Analyse/Analyse_Alle_Gebaude/ch.zip
-
-
-
 # Zu Grosse Daten für GitHub sind auf dem S Laufwerk gespeichert:
 # S:\HABG\E1364_IGEO_Projekte\E1364_G2023\6000_BTh\BTh_6
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# S:\HABG\E1364_IGEO_BTH\E1364_BTH6
 
 # Python.gitignore template
 # Byte-compiled / optimized / DLL files
